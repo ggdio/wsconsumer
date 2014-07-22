@@ -3,8 +3,11 @@ package br.com.ggdio.wsconsumer.main;
 import javax.wsdl.Port;
 import javax.wsdl.Service;
 import javax.wsdl.WSDLException;
+import javax.xml.soap.SOAPMessage;
+import javax.xml.ws.Dispatch;
 
 import br.com.ggdio.wsconsumer.api.SOAPConsumer;
+import br.com.ggdio.wsconsumer.api.SOAPProvider;
 
 public class App {
 
@@ -16,12 +19,22 @@ public class App {
 			final Port targetPort = (Port) targetService.getPorts().values().iterator().next();
 			consumer.setTargetService(targetService);
 			consumer.setTargetPort(targetPort);
-			System.out.println("WSDL = "     + consumer.getWsdl());
-			System.out.println("TNS = "      + consumer.getTargetNamespace());
-			System.out.println("SERVICE = " + consumer.getTargetService().getQName().getLocalPart());
-			System.out.println("PORT = " + consumer.getTargetPort().getName());
 			
-
+			String wsdl = consumer.getWsdl();
+			String targetNamespace = consumer.getTargetNamespace();
+			String serviceName = consumer.getTargetService().getQName().getLocalPart();
+			String portName = consumer.getTargetPort().getName();
+			
+			System.out.println("WSDL    = " + consumer.getWsdl());
+			System.out.println("TNS     = " + consumer.getTargetNamespace());
+			System.out.println("SERVICE = " + consumer.getTargetService().getQName().getLocalPart());
+			System.out.println("PORT    = " + consumer.getTargetPort().getName());
+			
+			SOAPProvider provider = new SOAPProvider();
+			Dispatch<SOAPMessage> dispatcher = provider.getDispatcher(wsdl, targetNamespace, serviceName, portName);
+			
+			consumer.invoke(dispatcher);
+			
 			// Create SOAP Connection
 //			SOAPConnectionFactory soapConnectionFactory = SOAPConnectionFactory.newInstance();
 //			SOAPConnection soapConnection = soapConnectionFactory.createConnection();

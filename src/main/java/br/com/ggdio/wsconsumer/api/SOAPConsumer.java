@@ -1,5 +1,6 @@
 package br.com.ggdio.wsconsumer.api;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -9,6 +10,14 @@ import javax.wsdl.Service;
 import javax.wsdl.WSDLException;
 import javax.wsdl.factory.WSDLFactory;
 import javax.wsdl.xml.WSDLReader;
+import javax.xml.soap.MessageFactory;
+import javax.xml.soap.SOAPBody;
+import javax.xml.soap.SOAPElement;
+import javax.xml.soap.SOAPEnvelope;
+import javax.xml.soap.SOAPException;
+import javax.xml.soap.SOAPMessage;
+import javax.xml.soap.SOAPPart;
+import javax.xml.ws.Dispatch;
 
 public class SOAPConsumer {
 	
@@ -46,49 +55,40 @@ public class SOAPConsumer {
 		return services;
 	}
 	
-//	private SOAPMessage createSOAPRequest() throws Exception {
-//		MessageFactory messageFactory = MessageFactory.newInstance();
-//		SOAPMessage soapMessage = messageFactory.createMessage();
-//		SOAPPart soapPart = soapMessage.getSOAPPart();
-//
-//		String serverURI = "http://tempuri.org/";
-//
-//		// SOAP Envelope
-//		SOAPEnvelope envelope = soapPart.getEnvelope();
-//		envelope.addNamespaceDeclaration("web", serverURI);
-//
-//		// SOAP Body
-//		SOAPBody soapBody = envelope.getBody();
-//		SOAPElement soapBodyElem = soapBody.addChildElement("FahrenheitToCelsius", "web");
-//
-//		MimeHeaders headers = soapMessage.getMimeHeaders();
-//		headers.addHeader("SOAPAction", serverURI + "FahrenheitToCelsius");
-//
-//		soapMessage.saveChanges();
-//
-//		/* Print the request message */
-//		System.out.print("Request SOAP Message = ");
-//		soapMessage.writeTo(System.out);
-//		System.out.println();
-//
-//		return soapMessage;
-//	}
-
-	/**
-	 * Method used to print the SOAP Response
-	 */
-//	private void printSOAPResponse(SOAPMessage soapResponse) throws Exception {
-//		System.out.println();
-//		TransformerFactory transformerFactory = TransformerFactory.newInstance();
-//		Transformer transformer = transformerFactory.newTransformer();
-//		Source sourceContent = soapResponse.getSOAPPart().getContent();
-//		System.out.print("\nResponse SOAP Message = ");
-//		StreamResult result = new StreamResult(System.out);
-//		transformer.transform(sourceContent, result);
-//		System.out.println();
-//		System.out.println();
-//	}
+	public SOAPMessage invoke(Dispatch<SOAPMessage> dispatcher) throws SOAPException, IOException {
+        SOAPMessage response = dispatcher.invoke(compileRequest());
+        return response;
+    }
 	
+	
+	private SOAPMessage compileRequest() throws SOAPException, IOException {
+		MessageFactory messageFactory = MessageFactory.newInstance();
+        SOAPMessage soapMessage = messageFactory.createMessage();
+        SOAPPart soapPart = soapMessage.getSOAPPart();
+ 
+ 
+        //SOAP Envelope
+        SOAPEnvelope envelope = soapPart.getEnvelope();
+        envelope.addNamespaceDeclaration(KEY_TNS, getTargetNamespace());
+ 
+        //SOAP Body
+        SOAPBody soapBody = envelope.getBody();
+        SOAPElement soapBodyElem = soapBody.addChildElement(getTargetService().getQName());
+         
+        soapMessage.saveChanges();
+ 
+        //Print the request body
+        System.out.print("Request SOAP Body = ");
+        System.out.println(soapBodyElem.toString());
+        
+        //Print the entire request message
+        System.out.print("Request SOAP Message = ");
+        soapMessage.writeTo(System.out);
+        System.out.println();
+ 
+        return soapMessage;
+	}
+
 	public List<String> getDetectedServicesNames(){
 		List<String> servicesNames = new ArrayList<>();
 		getDetectedServices().forEach(v -> servicesNames.add(v.getQName().getLocalPart()));
@@ -134,6 +134,5 @@ public class SOAPConsumer {
 	public void setDetectedServices(List<Service> detectedServices) {
 		this.detectedServices = detectedServices;
 	}
-	
 	
 }
