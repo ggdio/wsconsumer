@@ -89,6 +89,22 @@
 			<artifactId>wsdl4j</artifactId>
 			<version>1.6.3</version>
 		</dependency>
+		
+		<dependency>
+			<groupId>com.predic8</groupId>
+			<artifactId>soa-model-core</artifactId>
+			<version>1.4.2.5</version>
+			<scope>system</scope>
+			<systemPath>${basedir}/lib/soa-model-core-1.4.1.4.jar</systemPath>			
+		</dependency>
+
+		<dependency>
+			<groupId>com.predic8</groupId>
+			<artifactId>soa-model-distribution</artifactId>
+			<version>1.4.2.5</version>
+			<scope>system</scope>
+			<systemPath>${basedir}/lib/soa-model-distribution-1.4.1.4.jar</systemPath>			
+		</dependency>
 
 		<dependency>
 			<groupId>log4j</groupId>

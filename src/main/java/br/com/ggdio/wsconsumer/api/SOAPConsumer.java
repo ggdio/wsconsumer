@@ -29,7 +29,6 @@ public class SOAPConsumer {
 	private String targetNamespace = "";
 	private Service targetService;
 	private Port targetPort;
-	
 	private List<Service> detectedServices = new ArrayList<>();
 
 	public SOAPConsumer(String url) throws WSDLException {
