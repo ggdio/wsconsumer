@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import javax.wsdl.Definition;
+import javax.wsdl.Operation;
 import javax.wsdl.Port;
 import javax.wsdl.Service;
 import javax.wsdl.WSDLException;
@@ -29,7 +30,8 @@ public class SOAPConsumer {
 	private String targetNamespace = "";
 	private Service targetService;
 	private Port targetPort;
-	private List<Service> detectedServices = new ArrayList<>();
+	private List<Service> services = new ArrayList<>();
+	private List<Operation> operations = new ArrayList<>();
 
 	public SOAPConsumer(String url) throws WSDLException {
 		//Read-parse wsdl definition
@@ -42,7 +44,7 @@ public class SOAPConsumer {
 		
 		//Collect services and detected tns
 		this.targetNamespace = wsdlDef.getNamespace(KEY_TNS);
-		detectedServices.addAll(detectServices(wsdlDef));
+		services.addAll(detectServices(wsdlDef));
 	}
 	
 	private List<Service> detectServices(Definition wsdlDef){
@@ -90,7 +92,7 @@ public class SOAPConsumer {
 
 	public List<String> getDetectedServicesNames(){
 		List<String> servicesNames = new ArrayList<>();
-		getDetectedServices().forEach(v -> servicesNames.add(v.getQName().getLocalPart()));
+		getServices().forEach(v -> servicesNames.add(v.getQName().getLocalPart()));
 		return servicesNames;
 	}
 	
@@ -114,8 +116,8 @@ public class SOAPConsumer {
 		return targetPort;
 	}
 
-	public List<Service> getDetectedServices() {
-		return detectedServices;
+	public List<Service> getServices() {
+		return services;
 	}
 
 	public void setTargetNamespace(String targetNamespace) {
@@ -130,8 +132,8 @@ public class SOAPConsumer {
 		this.targetPort = targetPort;
 	}
 
-	public void setDetectedServices(List<Service> detectedServices) {
-		this.detectedServices = detectedServices;
+	public void setServices(List<Service> detectedServices) {
+		this.services = detectedServices;
 	}
 	
 }
