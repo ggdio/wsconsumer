@@ -13,6 +13,7 @@ import javax.wsdl.factory.WSDLFactory;
 import javax.wsdl.xml.WSDLReader;
 import javax.xml.soap.MessageFactory;
 import javax.xml.soap.SOAPBody;
+import javax.xml.soap.SOAPConstants;
 import javax.xml.soap.SOAPElement;
 import javax.xml.soap.SOAPEnvelope;
 import javax.xml.soap.SOAPException;
@@ -27,11 +28,14 @@ public class SOAPConsumer {
 	private final String wsdl;
 	private final Definition wsdlDefinition;
 	
+	//Invoke dependencies
 	private String targetNamespace = "";
 	private Service targetService;
 	private Port targetPort;
+	private Operation targetOperation;
+	
+	//List of services
 	private List<Service> services = new ArrayList<>();
-	private List<Operation> operations = new ArrayList<>();
 
 	public SOAPConsumer(String url) throws WSDLException {
 		//Read-parse wsdl definition
@@ -63,10 +67,12 @@ public class SOAPConsumer {
 	
 	
 	private SOAPMessage compileRequest() throws SOAPException, IOException {
-		MessageFactory messageFactory = MessageFactory.newInstance();
+		MessageFactory messageFactory = MessageFactory.newInstance(SOAPConstants.SOAP_1_1_PROTOCOL);
         SOAPMessage soapMessage = messageFactory.createMessage();
         SOAPPart soapPart = soapMessage.getSOAPPart();
  
+        //Header
+        soapMessage.getMimeHeaders().addHeader("Content-Type", "text/xml");
  
         //SOAP Envelope
         SOAPEnvelope envelope = soapPart.getEnvelope();
@@ -74,7 +80,8 @@ public class SOAPConsumer {
  
         //SOAP Body
         SOAPBody soapBody = envelope.getBody();
-        SOAPElement soapBodyElem = soapBody.addChildElement(getTargetService().getQName());
+//        String childElement = getTargetOperation().getInput().getMessage().getQName();
+        SOAPElement soapBodyElem = soapBody.addChildElement(getTargetOperation().getInput().getMessage().getPart("parameters").getElementName());
          
         soapMessage.saveChanges();
  
@@ -134,6 +141,14 @@ public class SOAPConsumer {
 
 	public void setServices(List<Service> detectedServices) {
 		this.services = detectedServices;
+	}
+	
+	public Operation getTargetOperation() {
+		return targetOperation;
+	}
+	
+	public void setTargetOperation(Operation targetOperation) {
+		this.targetOperation = targetOperation;
 	}
 	
 }
