@@ -25,10 +25,15 @@ public class SOAPProvider {
 					methodToBeCalled = ports.next();
 
 			//Prepare dispatcher
-			return service.createDispatch(methodToBeCalled, SOAPMessage.class, Service.Mode.MESSAGE);
+			return createDispatcher(service, methodToBeCalled);
 		} catch (Exception e) {
 			throw new RuntimeException("Error preparing dispatcher", e);
 		}
+	}
+
+	private Dispatch<SOAPMessage> createDispatcher(Service service, QName methodToBeCalled) {
+		Dispatch<SOAPMessage> dispatcher = service.createDispatch(methodToBeCalled, SOAPMessage.class, Service.Mode.MESSAGE);
+		return dispatcher;
 	}
 
 }
