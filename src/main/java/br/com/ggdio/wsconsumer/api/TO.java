@@ -44,6 +44,10 @@ public class TO implements Serializable {
 		}
 	}
 	
+	public void clear(){
+		fields.clear();
+	}
+	
 	public TO removeData(String name){
 		fields.remove(name.toLowerCase());
 		return this;

@@ -2,7 +2,6 @@ package br.com.ggdio.wsconsumer.api;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -20,7 +19,6 @@ import javax.xml.soap.MimeHeaders;
 import javax.xml.soap.SOAPBody;
 import javax.xml.soap.SOAPConnection;
 import javax.xml.soap.SOAPConnectionFactory;
-import javax.xml.soap.SOAPConstants;
 import javax.xml.soap.SOAPElement;
 import javax.xml.soap.SOAPEnvelope;
 import javax.xml.soap.SOAPException;
@@ -34,14 +32,8 @@ public class SOAPConsumer {
 	private final String wsdl;
 	private final Definition wsdlDefinition;
 	
-	//Invoke dependencies
-	private String protocol = SOAPConstants.SOAP_1_2_PROTOCOL;
-	private String targetNamespace = "";
-	private Service targetService;
-	private Port targetPort;
-	private Operation targetOperation;
-	private List<Part> parts = new ArrayList<>();
-	private Map<String, Object> parameters = new HashMap<>();
+	private final TO configuration = new TO();
+	private final TO parameters = new TO();
 	
 	//List of services
 	private List<Service> services = new ArrayList<>();
@@ -63,8 +55,10 @@ public class SOAPConsumer {
 		this.wsdlDefinition = wsdlDef;
 		
 		//Collect services and detected tns
-		this.targetNamespace = wsdlDef.getNamespace(KEY_TNS);
+		setTargetNamespace(wsdlDef.getNamespace(KEY_TNS));
 		services.addAll(detectServices(wsdlDef));
+		
+		setParts(new ArrayList<Part>());
 	}
 	
 	private List<Service> detectServices(Definition wsdlDef){
@@ -122,9 +116,9 @@ public class SOAPConsumer {
         for(Part part : getParts()){
         	QName qName = new QName(getTargetNamespace(), part.getName());
 			SOAPElement element = operation.addChildElement(qName);
-			Object value = getParameterValue(part.getName());
+			Object value = getParameters().getData(part.getName());
 			if(value != null)
-				element.setValue(value.toString());
+				element.setValue(String.valueOf(value));
         }
 	}
 
@@ -144,8 +138,16 @@ public class SOAPConsumer {
 		return servicesNames;
 	}
 	
+	public TO getConfiguration() {
+		return configuration;
+	}
+	
+	public TO getParameters() {
+		return parameters;
+	}
+	
 	public String getProtocol() {
-		return protocol;
+		return getConfiguration().getString(Constants.KEY_SOAP_PROTOCOL);
 	}
 	
 	public String getWsdl() {
@@ -157,59 +159,52 @@ public class SOAPConsumer {
 	}
 
 	public String getTargetNamespace() {
-		return targetNamespace;
+		return getConfiguration().getString(Constants.KEY_TARGET_NAMESPACE);
 	}
 
 	public Service getTargetService() {
-		return targetService;
+		return (Service) getConfiguration().getData(Constants.KEY_TARGET_SERVICE);
 	}
 	
 	public Port getTargetPort() {
-		return targetPort;
+		return (Port) getConfiguration().getData(Constants.KEY_TARGET_PORT);
 	}
 
 	public List<Service> getServices() {
 		return services;
 	}
 	
+	@SuppressWarnings("unchecked")
 	public List<Part> getParts() {
-		return parts;
+		return (List<Part>) getConfiguration().getData(Constants.KEY_PARTS);
 	}
 	
-	public Map<String, Object> getParameters() {
-		return parameters;
-	}
-	
-	public Object getParameterValue(String name){
-		return getParameters().get(name);
+	public Operation getTargetOperation() {
+		return (Operation) getConfiguration().getData(Constants.KEY_TARGET_OPERATION);
 	}
 	
 	public void setProtocol(String protocol) {
-		this.protocol = protocol;
+		getConfiguration().addData(Constants.KEY_SOAP_PROTOCOL, protocol);
 	}
 
 	public void setTargetNamespace(String targetNamespace) {
-		this.targetNamespace = targetNamespace;
+		getConfiguration().addData(Constants.KEY_TARGET_NAMESPACE, targetNamespace);
 	}
 
 	public void setTargetService(Service targetService) {
-		this.targetService = targetService;
+		getConfiguration().addData(Constants.KEY_TARGET_SERVICE, targetService);
 	}
 
 	public void setTargetPort(Port targetPort) {
-		this.targetPort = targetPort;
+		getConfiguration().addData(Constants.KEY_TARGET_PORT, targetPort);
 	}
 
 	public void setServices(List<Service> detectedServices) {
 		this.services = detectedServices;
 	}
 	
-	public Operation getTargetOperation() {
-		return targetOperation;
-	}
-	
 	protected void setParts(List<Part> parts) {
-		this.parts = parts;
+		getConfiguration().addData(Constants.KEY_PARTS, parts);
 	}
 	
 	protected void addPart(Part part){
@@ -217,14 +212,9 @@ public class SOAPConsumer {
 			getParts().add(part);
 	}
 	
-	public void setParameterValue(String name, Object value) {
-		if(name != null && !name.equals("") && value != null)
-			getParameters().put(name, value);
-	}
-	
 	public void setTargetOperation(Operation targetOperation) {
 		prepareParts(targetOperation);
-		this.targetOperation = targetOperation;
+		getConfiguration().addData(Constants.KEY_TARGET_OPERATION, targetOperation);
 	}
 
 	@SuppressWarnings("unchecked")
