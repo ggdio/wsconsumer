@@ -27,67 +27,41 @@ import javax.xml.ws.Dispatch;
 
 public class SOAPConsumer {
 	
-	private static final String KEY_TNS = "tns";
+	private static final String NAMESPACE_PREFIX = "tns";
 	
-	private final String wsdl;
 	private final Definition wsdlDefinition;
+	private final SOAPBean soapBean;
 	
-	private final TO configuration = new TO();
-	private final TO parameters = new TO();
-	
-	//List of services
-	private List<Service> services = new ArrayList<>();
-
-	public SOAPConsumer(String url) throws WSDLException {
-		if(url == null || url.equals(""))
+	public SOAPConsumer(SOAPBean bean) throws WSDLException {
+		//Handle npe
+		if(bean == null || bean.equals(""))
+			throw new NullPointerException("SOAPBean must not be null");
+		if(bean.getWSDLUrl() == null || bean.getWSDLUrl().equals(""))
 			throw new NullPointerException("URL must not be null or blank");
 		
-		//WSDL Treatment
-		if(!url.toLowerCase().endsWith("?wsdl"))
-			url = url.concat("?wsdl");
-		
-		//Read-parse wsdl definition
-		WSDLReader reader = WSDLFactory.newInstance().newWSDLReader();
-		Definition wsdlDef = reader.readWSDL(null, url);
-		
-		//WSDL
-		this.wsdl = url;
-		this.wsdlDefinition = wsdlDef;
-		
-		//Collect services and detected tns
-		setTargetNamespace(wsdlDef.getNamespace(KEY_TNS));
-		services.addAll(detectServices(wsdlDef));
-		
-		setParts(new ArrayList<Part>());
+		//Fields
+		this.wsdlDefinition = WSDLFactory.newInstance().newWSDLReader().readWSDL(null, bean.getWSDLUrl());
+		this.soapBean = bean;
 	}
 	
-	private List<Service> detectServices(Definition wsdlDef){
-		//Collect services
-		List<Service> services = new ArrayList<>();
-		for(Object value : wsdlDef.getServices().values())
-			if(value instanceof Service)
-				services.add((Service) value);
-		return services;
-	}
-	
-	public SOAPMessage invoke() throws SOAPException, IOException {
+	public SOAPMessage invoke(TO input) throws SOAPException, IOException {
 		SOAPConnection connection = SOAPConnectionFactory.newInstance().createConnection();
 		try{
-			return SOAPConnectionFactory.newInstance().createConnection().call(compileRequest(), getWsdl());
+			return SOAPConnectionFactory.newInstance().createConnection().call(compileRequest(input), getSoapBean().getWSDLUrl());
 		}
 		finally{
 			connection.close();
 		}
     }
 	
-	public SOAPMessage invoke(Dispatch<SOAPMessage> dispatcher) throws SOAPException, IOException {
-		return dispatcher.invoke(compileRequest());
+	public SOAPMessage invoke(Dispatch<SOAPMessage> dispatcher, TO input) throws SOAPException, IOException {
+		return dispatcher.invoke(compileRequest(input));
     }
 	
 	
-	private SOAPMessage compileRequest() throws SOAPException, IOException {
+	private SOAPMessage compileRequest(TO input) throws SOAPException, IOException {
         //Create message
-		SOAPMessage soapMessage = MessageFactory.newInstance(getProtocol()).createMessage();
+		SOAPMessage soapMessage = MessageFactory.newInstance(getSoapBean().getProtocol()).createMessage();
 		MimeHeaders headers = soapMessage.getMimeHeaders();
 		SOAPEnvelope envelope = soapMessage.getSOAPPart().getEnvelope();
 		SOAPBody body = envelope.getBody();
@@ -110,7 +84,7 @@ public class SOAPConsumer {
 
 	private void compileBody(SOAPBody body) throws SOAPException {
 		//SOAP Operaton
-		SOAPElement operation = body.addChildElement(new QName(getTargetNamespace(), getTargetOperation().getName()));
+		SOAPElement operation = body.addChildElement(new QName(getSoapBean().getTargetNamespace(), getSoapBean().getOperation()));
         
         //SOAP Parameters
         for(Part part : getParts()){
@@ -123,107 +97,28 @@ public class SOAPConsumer {
 	}
 
 	private void compileNamespace(SOAPEnvelope envelope) throws SOAPException {
-        envelope.addNamespaceDeclaration(KEY_TNS, getTargetNamespace());
+        envelope.addNamespaceDeclaration(NAMESPACE_PREFIX, getSoapBean().getTargetNamespace());
 	}
 
 	private void compileHeaders(MimeHeaders headers) {
-		headers.setHeader("SOAPAction", getTargetNamespace() + getTargetOperation().getName());
+		headers.setHeader("SOAPAction", getSoapBean().getTargetNamespace() + getSoapBean().getOperation());
 		headers.setHeader("Content-Type", "text/xml; charset=utf-8");
         headers.setHeader("Connection", "Keep-Alive");
 	}
 
-	public List<String> getDetectedServicesNames(){
-		List<String> servicesNames = new ArrayList<>();
-		getServices().forEach(v -> servicesNames.add(v.getQName().getLocalPart()));
-		return servicesNames;
-	}
-	
-	public TO getConfiguration() {
-		return configuration;
-	}
-	
-	public TO getParameters() {
-		return parameters;
-	}
-	
-	public String getProtocol() {
-		return getConfiguration().getString(Constants.KEY_SOAP_PROTOCOL);
-	}
-	
-	public String getWsdl() {
-		return wsdl;
-	}
-
-	public Definition getWsdlDefinition() {
-		return wsdlDefinition;
-	}
-
-	public String getTargetNamespace() {
-		return getConfiguration().getString(Constants.KEY_TARGET_NAMESPACE);
-	}
-
-	public Service getTargetService() {
-		return (Service) getConfiguration().getData(Constants.KEY_TARGET_SERVICE);
-	}
-	
-	public Port getTargetPort() {
-		return (Port) getConfiguration().getData(Constants.KEY_TARGET_PORT);
-	}
-
-	public List<Service> getServices() {
-		return services;
-	}
-	
-	@SuppressWarnings("unchecked")
-	public List<Part> getParts() {
-		return (List<Part>) getConfiguration().getData(Constants.KEY_PARTS);
-	}
-	
-	public Operation getTargetOperation() {
-		return (Operation) getConfiguration().getData(Constants.KEY_TARGET_OPERATION);
-	}
-	
-	public void setProtocol(String protocol) {
-		getConfiguration().addData(Constants.KEY_SOAP_PROTOCOL, protocol);
-	}
-
-	public void setTargetNamespace(String targetNamespace) {
-		getConfiguration().addData(Constants.KEY_TARGET_NAMESPACE, targetNamespace);
-	}
-
-	public void setTargetService(Service targetService) {
-		getConfiguration().addData(Constants.KEY_TARGET_SERVICE, targetService);
-	}
-
-	public void setTargetPort(Port targetPort) {
-		getConfiguration().addData(Constants.KEY_TARGET_PORT, targetPort);
-	}
-
-	public void setServices(List<Service> detectedServices) {
-		this.services = detectedServices;
-	}
-	
-	protected void setParts(List<Part> parts) {
-		getConfiguration().addData(Constants.KEY_PARTS, parts);
-	}
-	
-	protected void addPart(Part part){
-		if(part != null)
-			getParts().add(part);
-	}
-	
-	public void setTargetOperation(Operation targetOperation) {
-		prepareParts(targetOperation);
-		getConfiguration().addData(Constants.KEY_TARGET_OPERATION, targetOperation);
-	}
-
 	@SuppressWarnings("unchecked")
 	private void prepareParts(Operation targetOperation) {
-		getParts().clear();
-		getParameters().clear();
 		Map<String, Part> parts = targetOperation.getInput().getMessage().getParts();
 		for(String key : parts.keySet())
 			addPart(parts.get(key));
+	}
+	
+	public Definition getWsdlDefinition() {
+		return wsdlDefinition;
+	}
+	
+	public SOAPBean getSoapBean() {
+		return soapBean;
 	}
 	
 }
