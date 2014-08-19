@@ -85,15 +85,15 @@
 	<dependencies>
 
 		<dependency>
-			<groupId>wsdl4j</groupId>
-			<artifactId>wsdl4j</artifactId>
-			<version>1.6.3</version>
+			<groupId>org.ow2.easywsdl</groupId>
+			<artifactId>easywsdl-wsdl</artifactId>
+			<version>2.1</version>
 		</dependency>
 
 		<dependency>
-			<groupId>com.smartbear.soapui</groupId>
-			<artifactId>soapui-project</artifactId>
-			<version>5.1.1</version>
+			<groupId>wsdl4j</groupId>
+			<artifactId>wsdl4j</artifactId>
+			<version>1.6.3</version>
 		</dependency>
 
 		<dependency>
@@ -139,12 +139,5 @@
 			<scope>test</scope>
 		</dependency>
 	</dependencies>
-
-	<repositories>
-		<repository>
-			<id>eviware</id>
-			<url>http://www.eviware.com/repository/maven2/</url>
-		</repository>
-	</repositories>
 
 </project>

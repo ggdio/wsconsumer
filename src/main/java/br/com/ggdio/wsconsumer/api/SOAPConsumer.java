@@ -86,14 +86,14 @@ public class SOAPConsumer {
 		//SOAP Operaton
 		SOAPElement operation = body.addChildElement(new QName(getSoapBean().getTargetNamespace(), getSoapBean().getOperation()));
         
-        //SOAP Parameters
-        for(Part part : getParts()){
-        	QName qName = new QName(getTargetNamespace(), part.getName());
-			SOAPElement element = operation.addChildElement(qName);
-			Object value = getParameters().getData(part.getName());
-			if(value != null)
-				element.setValue(String.valueOf(value));
-        }
+//        //SOAP Parameters
+//        for(Part part : getParts()){
+//        	QName qName = new QName(getTargetNamespace(), part.getName());
+//			SOAPElement element = operation.addChildElement(qName);
+//			Object value = getParameters().getData(part.getName());
+//			if(value != null)
+//				element.setValue(String.valueOf(value));
+//        }
 	}
 
 	private void compileNamespace(SOAPEnvelope envelope) throws SOAPException {
@@ -109,8 +109,8 @@ public class SOAPConsumer {
 	@SuppressWarnings("unchecked")
 	private void prepareParts(Operation targetOperation) {
 		Map<String, Part> parts = targetOperation.getInput().getMessage().getParts();
-		for(String key : parts.keySet())
-			addPart(parts.get(key));
+//		for(String key : parts.keySet())
+//			addPart(parts.get(key));
 	}
 	
 	public Definition getWsdlDefinition() {
