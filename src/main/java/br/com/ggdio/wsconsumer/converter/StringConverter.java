@@ -8,7 +8,7 @@ public class StringConverter implements Converter<String> {
 	}
 
 	@Override
-	public String toString(String value) {
+	public String toString(Object value) {
 		return String.valueOf(value);
 	}
 

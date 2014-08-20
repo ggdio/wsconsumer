@@ -8,7 +8,7 @@ public class DoubleConverter implements Converter<Double> {
 	}
 
 	@Override
-	public String toString(Double value) {
+	public String toString(Object value) {
 		return String.valueOf(value);
 	}
 

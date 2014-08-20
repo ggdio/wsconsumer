@@ -31,14 +31,18 @@ import org.xml.sax.SAXException;
  */
 public final class SOAPModelDiscovery {
 	
-	public static final TO discoverModel(String wsdl, String tns, String serviceName, String portName, String operationName, String inputName, String outputName) throws WSDLException, XPathExpressionException, SAXException, IOException, ParserConfigurationException{
+	public static final TO discoverModel(String wsdl, String protocol, String tns, String serviceName, String portName, String operationName, String inputName, String outputName) throws WSDLException, XPathExpressionException, SAXException, IOException, ParserConfigurationException{
+		TO configuration = new TO();
+		TO input = new TO();
+		TO output = new TO();
 		final TO model = new TO();
-		final TO input = new TO();
-		final TO output = new TO();
 		
+		//Prepare the reader
 		WSDLReader reader = WSDLFactory.newInstance().newWSDLReader();
 		reader.setFeature("javax.wsdl.verbose", false);
         reader.setFeature("javax.wsdl.importDocuments", true);
+        
+        //Stablish the soap definition
 		Definition def = reader.readWSDL(null, wsdl);
 		Document document = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(wsdl);
 		Service service = def.getService(new QName(tns, serviceName));
@@ -61,6 +65,10 @@ public final class SOAPModelDiscovery {
 			Object type = part.getTypeName() != null ? part.getTypeName().getLocalPart() : null;
 			if(type == null || "".equals(type)){
 				TO xsdModel = resolveXSDModel(document, name);
+//				if(name.equals(operation.getName())){
+//					input = xsdModel;
+//					break;
+//				}
 				type = xsdModel != null ? xsdModel : XSDType.STRING;
 			}
 			else{
@@ -104,19 +112,24 @@ public final class SOAPModelDiscovery {
 			output.addData(name, type);
 		}
 		
+		//Set configuration
+		configuration.addData(Constants.KEY_WSDL, wsdl);
+		configuration.addData(Constants.KEY_SOAP_PROTOCOL, protocol);
+		configuration.addData(Constants.KEY_TARGET_NAMESPACE, tns);
+		configuration.addData(Constants.KEY_SERVICE, serviceName);
+		configuration.addData(Constants.KEY_PORT, portName);
+		configuration.addData(Constants.KEY_OPERATION, operationName);
+		configuration.addData(Constants.KEY_OPERATION_INPUT_NAME, inputName);
+		configuration.addData(Constants.KEY_OPERATION_INPUT_NAME, outputName);
+		configuration.addData(Constants.KEY_SOAP_PROTOCOL, protocol);
+		
 		//Set model
+		model.addData(Constants.KEY_CONFIGURATION, configuration);
 		model.addData(Constants.KEY_INPUT_PARTS, input);
 		model.addData(Constants.KEY_OUTPUT_PARTS, output);
 		
 		return model;
 	}
-	
-//	private static final Schema getSchema(Definition definition){
-//		for(Object elm : definition.getTypes().getExtensibilityElements())
-//			if(elm instanceof Schema)
-//				return (Schema) elm;
-//		return null;
-//	}
 	
 	private static final TO resolveXSDModel(Object scope, String typeName) throws XPathExpressionException{
 		//Object to return
@@ -179,5 +192,11 @@ public final class SOAPModelDiscovery {
 		return value.substring(value.indexOf(":") + 1);
 	}
 	
+//	private static final Schema getSchema(Definition definition){
+//	for(Object elm : definition.getTypes().getExtensibilityElements())
+//		if(elm instanceof Schema)
+//			return (Schema) elm;
+//	return null;
+//}
 	
 }

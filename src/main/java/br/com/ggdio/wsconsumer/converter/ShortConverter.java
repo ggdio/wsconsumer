@@ -8,7 +8,7 @@ public class ShortConverter implements Converter<Short> {
 	}
 
 	@Override
-	public String toString(Short value) {
+	public String toString(Object value) {
 		return String.valueOf(value);
 	}
 

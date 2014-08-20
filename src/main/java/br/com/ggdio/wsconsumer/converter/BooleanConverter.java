@@ -8,7 +8,7 @@ public class BooleanConverter implements Converter<Boolean> {
 	}
 
 	@Override
-	public String toString(Boolean value) {
+	public String toString(Object value) {
 		return String.valueOf(value);
 	}
 	

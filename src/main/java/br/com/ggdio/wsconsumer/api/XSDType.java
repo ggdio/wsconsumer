@@ -3,7 +3,6 @@ package br.com.ggdio.wsconsumer.api;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.util.ArrayList;
 
 import br.com.ggdio.wsconsumer.converter.BooleanConverter;
 import br.com.ggdio.wsconsumer.converter.ByteConverter;
@@ -12,7 +11,6 @@ import br.com.ggdio.wsconsumer.converter.Converter;
 import br.com.ggdio.wsconsumer.converter.DoubleConverter;
 import br.com.ggdio.wsconsumer.converter.FloatConverter;
 import br.com.ggdio.wsconsumer.converter.IntegerConverter;
-import br.com.ggdio.wsconsumer.converter.ListConverter;
 import br.com.ggdio.wsconsumer.converter.LocalDateConverter;
 import br.com.ggdio.wsconsumer.converter.LocalDateTimeConverter;
 import br.com.ggdio.wsconsumer.converter.LocalTimeConverter;
@@ -65,14 +63,12 @@ public enum XSDType {
 	
 	ID(String.class, new StringConverter()),
 	
-	IDREFS(String.class, new StringConverter()),
-	
-	LIST(ArrayList.class, new ListConverter());
+	IDREFS(String.class, new StringConverter());
 	
 	private final Class<?> nativeType;
 	private final Converter<?> converter;
 
-	private <T> XSDType(Class<T> nativeType, Converter<T> converter) {
+	private <T extends Object> XSDType(Class<T> nativeType, Converter<T> converter) {
 		this.nativeType = nativeType;
 		this.converter = converter;
 	}

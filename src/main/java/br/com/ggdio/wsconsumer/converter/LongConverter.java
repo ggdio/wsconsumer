@@ -8,7 +8,7 @@ public class LongConverter implements Converter<Long> {
 	}
 
 	@Override
-	public String toString(Long value) {
+	public String toString(Object value) {
 		return String.valueOf(value);
 	}
 

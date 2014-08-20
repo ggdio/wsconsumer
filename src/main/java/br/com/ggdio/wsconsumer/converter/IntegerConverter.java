@@ -8,7 +8,7 @@ public class IntegerConverter implements Converter<Integer> {
 	}
 
 	@Override
-	public String toString(Integer value) {
+	public String toString(Object value) {
 		return String.valueOf(value);
 	}
 

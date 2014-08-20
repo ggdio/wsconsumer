@@ -8,7 +8,7 @@ public class CharacterConverter implements Converter<Character> {
 	}
 
 	@Override
-	public String toString(Character value) {
+	public String toString(Object value) {
 		return String.valueOf(value);
 	}
 

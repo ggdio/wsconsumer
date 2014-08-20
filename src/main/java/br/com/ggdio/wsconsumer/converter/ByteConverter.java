@@ -8,7 +8,7 @@ public class ByteConverter implements Converter<Byte> {
 	}
 
 	@Override
-	public String toString(Byte value) {
+	public String toString(Object value) {
 		return String.valueOf(value);
 	}
 

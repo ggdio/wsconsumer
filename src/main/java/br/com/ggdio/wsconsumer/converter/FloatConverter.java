@@ -8,7 +8,7 @@ public class FloatConverter implements Converter<Float> {
 	}
 
 	@Override
-	public String toString(Float value) {
+	public String toString(Object value) {
 		return String.valueOf(value);
 	}
 

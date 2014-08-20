@@ -10,7 +10,7 @@ public class LocalTimeConverter implements Converter<LocalTime> {
 	}
 
 	@Override
-	public String toString(LocalTime value) {
+	public String toString(Object value) {
 		return String.valueOf(value);
 	}
 }

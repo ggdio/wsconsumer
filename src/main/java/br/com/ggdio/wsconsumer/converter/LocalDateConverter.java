@@ -10,7 +10,7 @@ public class LocalDateConverter implements Converter<LocalDate> {
 	}
 
 	@Override
-	public String toString(LocalDate value) {
+	public String toString(Object value) {
 		return String.valueOf(value);
 	}
 
