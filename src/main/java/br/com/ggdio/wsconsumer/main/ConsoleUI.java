@@ -21,11 +21,11 @@ import javax.xml.xpath.XPathExpressionException;
 import org.xml.sax.SAXException;
 
 import br.com.ggdio.wsconsumer.api.Constants;
-import br.com.ggdio.wsconsumer.api.SOAPBean;
 import br.com.ggdio.wsconsumer.api.SOAPConsumer;
 import br.com.ggdio.wsconsumer.api.SOAPModelDiscovery;
 import br.com.ggdio.wsconsumer.api.TO;
 import br.com.ggdio.wsconsumer.api.XSDType;
+import br.com.ggdio.wsconsumer.soap.model.Part;
 
 /**
  * Console application for tests
@@ -56,7 +56,7 @@ public class ConsoleUI {
 		final String wsdl = askWsdl();
 		TO configuration = new TO();
 		configuration.addData(Constants.KEY_WSDL, wsdl);
-		SOAPBean soapBean = new SOAPBean(configuration, new TO(), new TO());
+		Part soapBean = new Part(configuration, new TO(), new TO());
 		this.consumer = new SOAPConsumer(soapBean);
 		
 		//2 - User choose the soap protocol

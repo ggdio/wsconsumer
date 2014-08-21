@@ -2,7 +2,7 @@ package br.com.ggdio.wsconsumer.converter;
 
 import java.time.LocalDate;
 
-public class LocalDateConverter implements Converter<LocalDate> {
+public class DateConverter implements Converter<LocalDate> {
 
 	@Override
 	public LocalDate toObject(String value) {

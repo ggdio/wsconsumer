@@ -24,6 +24,8 @@ import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
+import br.com.ggdio.wsconsumer.soap.model.Part;
+
 /**
  * SOAP Model Discovery Utility Class
  * @author Guilherme Dio
@@ -31,11 +33,11 @@ import org.xml.sax.SAXException;
  */
 public final class SOAPModelDiscovery {
 	
-	public static final TO discoverModel(String wsdl, String protocol, String tns, String serviceName, String portName, String operationName, String inputName, String outputName) throws WSDLException, XPathExpressionException, SAXException, IOException, ParserConfigurationException{
-		TO configuration = new TO();
-		TO input = new TO();
-		TO output = new TO();
-		final TO model = new TO();
+	public static final Part discoverModel(String wsdl, String protocol, String tns, String serviceName, String portName, String operationName, String inputName, String outputName) throws WSDLException, XPathExpressionException, SAXException, IOException, ParserConfigurationException{
+		final Part model = new Part();
+		final TO input = new TO();
+		final TO output = new TO();
+		final TO configuration = new TO();
 		
 		//Prepare the reader
 		WSDLReader reader = WSDLFactory.newInstance().newWSDLReader();
@@ -78,7 +80,6 @@ public final class SOAPModelDiscovery {
 					type = XSDType.STRING;
 			}
 				
-			
 			//Save
 			input.addData(name, type);
 		}
@@ -124,9 +125,9 @@ public final class SOAPModelDiscovery {
 		configuration.addData(Constants.KEY_SOAP_PROTOCOL, protocol);
 		
 		//Set model
-		model.addData(Constants.KEY_CONFIGURATION, configuration);
-		model.addData(Constants.KEY_INPUT_PARTS, input);
-		model.addData(Constants.KEY_OUTPUT_PARTS, output);
+		model.setInputSchema(input);
+		model.setOutputSchema(output);
+		model.setConfiguration(configuration);
 		
 		return model;
 	}

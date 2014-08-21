@@ -1,10 +1,10 @@
 package br.com.ggdio.wsconsumer.converter;
 
-public class CharacterConverter implements Converter<Character> {
+public class IntConverter implements Converter<Integer> {
 
 	@Override
-	public Character toObject(String value) {
-		return value.charAt(0);
+	public Integer toObject(String value) {
+		return Integer.parseInt(value);
 	}
 
 	@Override

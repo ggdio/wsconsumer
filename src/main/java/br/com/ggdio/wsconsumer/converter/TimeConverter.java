@@ -2,7 +2,7 @@ package br.com.ggdio.wsconsumer.converter;
 
 import java.time.LocalTime;
 
-public class LocalTimeConverter implements Converter<LocalTime> {
+public class TimeConverter implements Converter<LocalTime> {
 
 	@Override
 	public LocalTime toObject(String value) {

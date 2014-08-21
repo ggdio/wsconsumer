@@ -1,10 +1,10 @@
 package br.com.ggdio.wsconsumer.converter;
 
-public class CharacterConverter implements Converter<Character> {
+public class AnyURIConverter implements Converter<String> {
 
 	@Override
-	public Character toObject(String value) {
-		return value.charAt(0);
+	public String toObject(String value) {
+		return String.valueOf(value);
 	}
 
 	@Override

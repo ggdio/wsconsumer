@@ -24,6 +24,8 @@ import javax.xml.soap.SOAPHeader;
 import javax.xml.soap.SOAPMessage;
 import javax.xml.ws.Dispatch;
 
+import br.com.ggdio.wsconsumer.soap.model.Part;
+
 /**
  * SOAP Consumer utility
  * @author Guilherme Dio
@@ -34,9 +36,9 @@ public class SOAPConsumer {
 	private static final String NAMESPACE_PREFIX = "tns";
 	
 	private final Definition wsdlDefinition;
-	private final SOAPBean soapBean;
+	private final Part soapBean;
 	
-	public SOAPConsumer(SOAPBean bean) throws WSDLException {
+	public SOAPConsumer(Part bean) throws WSDLException {
 		//Handle npe
 		if(bean == null)
 			throw new NullPointerException("SOAPBean must not be null");
@@ -165,7 +167,7 @@ public class SOAPConsumer {
 		return wsdlDefinition;
 	}
 	
-	public SOAPBean getSoapBean() {
+	public Part getSoapBean() {
 		return soapBean;
 	}
 	

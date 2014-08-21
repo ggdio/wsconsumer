@@ -1,10 +1,10 @@
 package br.com.ggdio.wsconsumer.converter;
 
-public class CharacterConverter implements Converter<Character> {
+public class DecimalConverter implements Converter<Double> {
 
 	@Override
-	public Character toObject(String value) {
-		return value.charAt(0);
+	public Double toObject(String value) {
+		return Double.parseDouble(value);
 	}
 
 	@Override
