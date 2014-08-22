@@ -1,5 +1,7 @@
 package br.com.ggdio.wsconsumer.soap.model;
 
+import java.util.List;
+
 import br.com.ggdio.wsconsumer.api.TO;
 
 /**
@@ -12,7 +14,7 @@ public class Part extends TO{
 	private static final long serialVersionUID = 1L;
 	
 	public static final String NAME = "NAME";
-	public static final String SCHEMA = "SCHEMA"; 
+	public static final String PARAMETERS_SCHEMA = "PARAMETERS_SCHEMA"; 
 
 	public Part() {
 		// TODO Auto-generated constructor stub
@@ -26,12 +28,13 @@ public class Part extends TO{
 		addData(NAME, name);
 	}
 	
-	public Schema getSchema(){
-		return (Schema) getData(SCHEMA);
+	@SuppressWarnings("unchecked")
+	public List<Schema> getParametersSchema(){
+		return (List<Schema>) getData(PARAMETERS_SCHEMA);
 	}
 	
-	public void setSchema(Schema schema){
-		addData(SCHEMA, schema);
+	public void setParametersSchema(List<Schema> schema){
+		addData(PARAMETERS_SCHEMA, schema);
 	}
 	
 }

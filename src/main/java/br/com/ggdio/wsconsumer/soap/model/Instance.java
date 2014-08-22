@@ -49,7 +49,7 @@ public class Instance extends TO{
 		addData(SOAP_PROTOCOL, soapProtocol);
 	}
 	
-	public String getTargetNamespae(){
+	public String getTargetNamespace(){
 		return getString(TARGET_NAMESPACE);
 	}
 	

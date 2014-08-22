@@ -24,6 +24,8 @@ import javax.xml.soap.SOAPHeader;
 import javax.xml.soap.SOAPMessage;
 import javax.xml.ws.Dispatch;
 
+import br.com.ggdio.wsconsumer.soap.invoke.ParameterValue;
+import br.com.ggdio.wsconsumer.soap.model.Instance;
 import br.com.ggdio.wsconsumer.soap.model.Part;
 
 /**
@@ -36,37 +38,35 @@ public class SOAPConsumer {
 	private static final String NAMESPACE_PREFIX = "tns";
 	
 	private final Definition wsdlDefinition;
-	private final Part soapBean;
+	private final Instance webservice;
 	
-	public SOAPConsumer(Part bean) throws WSDLException {
+	public SOAPConsumer(Instance webservice) throws WSDLException {
 		//Handle npe
-		if(bean == null)
-			throw new NullPointerException("SOAPBean must not be null");
-		if(bean.getWSDLUrl() == null || bean.getWSDLUrl().equals(""))
-			throw new NullPointerException("URL must not be null or blank");
+		if(webservice == null)
+			throw new NullPointerException("Webservice instance detail bean must not be null");
 		
 		//Fields
-		this.wsdlDefinition = WSDLFactory.newInstance().newWSDLReader().readWSDL(null, bean.getWSDLUrl());
-		this.soapBean = bean;
+		this.wsdlDefinition = WSDLFactory.newInstance().newWSDLReader().readWSDL(null, webservice.getWSDL());
+		this.webservice = webservice;
 	}
 	
-	public SOAPMessage invoke(TO input) throws SOAPException, IOException {
+	public SOAPMessage invoke(List<ParameterValue> values) throws SOAPException, IOException {
 		SOAPConnection connection = SOAPConnectionFactory.newInstance().createConnection();
 		try{
-			return SOAPConnectionFactory.newInstance().createConnection().call(compileRequest(input), getSoapBean().getWSDLUrl());
+			return SOAPConnectionFactory.newInstance().createConnection().call(compileRequest(values), getWebservice().getWSDL());
 		}
 		finally{
 			connection.close();
 		}
     }
 	
-	public SOAPMessage invoke(Dispatch<SOAPMessage> dispatcher, TO input) throws SOAPException, IOException {
-		return dispatcher.invoke(compileRequest(input));
+	public SOAPMessage invoke(Dispatch<SOAPMessage> dispatcher, List<ParameterValue> values) throws SOAPException, IOException {
+		return dispatcher.invoke(compileRequest(values));
     }
 	
-	private SOAPMessage compileRequest(TO input) throws SOAPException, IOException {
+	private SOAPMessage compileRequest(List<ParameterValue> values) throws SOAPException, IOException {
         //Create message
-		SOAPMessage soapMessage = MessageFactory.newInstance(getSoapBean().getProtocol()).createMessage();
+		SOAPMessage soapMessage = MessageFactory.newInstance(getWebservice().getSOAPProtocol()).createMessage();
 		MimeHeaders mimeHeaders = soapMessage.getMimeHeaders();
 		SOAPHeader soapHeader = soapMessage.getSOAPHeader();
 		SOAPEnvelope envelope = soapMessage.getSOAPPart().getEnvelope();
@@ -75,8 +75,8 @@ public class SOAPConsumer {
         //Prepare Message
 		compileMimeHeaders(mimeHeaders);
         compileNamespace(envelope);
-        compileSoapHeader(soapHeader, input);
-        compileSoapBody(body, input);
+        compileSoapHeader(soapHeader, values);
+        compileSoapBody(body, values);
         
         //Save Message
         soapMessage.saveChanges();
@@ -90,29 +90,29 @@ public class SOAPConsumer {
 	}
 	
 	private void compileMimeHeaders(MimeHeaders headers) {
-		headers.setHeader("SOAPAction", getSoapBean().getTargetNamespace() + getSoapBean().getOperation());
+		headers.setHeader("SOAPAction", getWebservice().getTargetNamespace() + getWebservice().getOperation());
 		headers.setHeader("Content-Type", "text/xml; charset=utf-8");
         headers.setHeader("Connection", "Keep-Alive");
 	}
 	
 	private void compileNamespace(SOAPEnvelope envelope) throws SOAPException {
-        envelope.addNamespaceDeclaration(NAMESPACE_PREFIX, getSoapBean().getTargetNamespace());
+        envelope.addNamespaceDeclaration(NAMESPACE_PREFIX, getWebservice().getTargetNamespace());
 	}
 	
-	private void compileSoapHeader(SOAPHeader header, TO input) throws SOAPException {
+	private void compileSoapHeader(SOAPHeader header, List<ParameterValue> values) throws SOAPException {
 		//TODO: Preare soapHeader
 	}
 
-	private void compileSoapBody(SOAPBody body, TO input) throws SOAPException {
+	private void compileSoapBody(SOAPBody body, List<ParameterValue> values) throws SOAPException {
 		//SOAP Operaton
 		SOAPElement operation = null;
 //		SOAPElement operation = body.addChildElement(new QName(getSoapBean().getTargetNamespace(), getSoapBean().getOperation()));
-		if(getSoapBean().getTargetNamespace() != null || "".equals(getSoapBean().getTargetNamespace()))
-			operation = body.addChildElement(new QName(NAMESPACE_PREFIX + ":" + getSoapBean().getOperation()));
+		if(getWebservice().getTargetNamespace() != null || "".equals(getWebservice().getTargetNamespace()))
+			operation = body.addChildElement(new QName(NAMESPACE_PREFIX + ":" + getWebservice().getOperation()));
 		else
-			operation = body.addChildElement(new QName(getSoapBean().getOperation()));
+			operation = body.addChildElement(new QName(getWebservice().getOperation()));
 			
-        compileSoapOperation(operation, input);
+        compileSoapOperation(operation, values);
 	}
 	
 	/**
@@ -121,8 +121,8 @@ public class SOAPConsumer {
 	 * @param input
 	 * @throws SOAPException
 	 */
-	private void compileSoapOperation(SOAPElement operation, TO input) throws SOAPException{
-		compileSoapOperation(operation, input, getSoapBean().getInputParts());
+	private void compileSoapOperation(SOAPElement operation, List<ParameterValue> values) throws SOAPException{
+		compileSoapOperation(operation, values, targetOperation.getModel());
 	}
 	
 	/**
@@ -167,8 +167,8 @@ public class SOAPConsumer {
 		return wsdlDefinition;
 	}
 	
-	public Part getSoapBean() {
-		return soapBean;
+	public Instance getWebservice() {
+		return webservice;
 	}
 	
 	public Service getService(String serviceName){
