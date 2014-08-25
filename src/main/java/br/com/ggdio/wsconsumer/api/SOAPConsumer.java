@@ -24,9 +24,10 @@ import javax.xml.soap.SOAPHeader;
 import javax.xml.soap.SOAPMessage;
 import javax.xml.ws.Dispatch;
 
-import br.com.ggdio.wsconsumer.soap.invoke.ParameterValue;
+import br.com.ggdio.wsconsumer.soap.invoke.Invocation;
+import br.com.ggdio.wsconsumer.soap.invoke.SchemaValue;
 import br.com.ggdio.wsconsumer.soap.model.Instance;
-import br.com.ggdio.wsconsumer.soap.model.Part;
+import br.com.ggdio.wsconsumer.soap.model.Schema;
 
 /**
  * SOAP Consumer utility
@@ -50,21 +51,21 @@ public class SOAPConsumer {
 		this.webservice = webservice;
 	}
 	
-	public SOAPMessage invoke(List<ParameterValue> values) throws SOAPException, IOException {
+	public SOAPMessage invoke(Invocation invocation) throws SOAPException, IOException {
 		SOAPConnection connection = SOAPConnectionFactory.newInstance().createConnection();
 		try{
-			return SOAPConnectionFactory.newInstance().createConnection().call(compileRequest(values), getWebservice().getWSDL());
+			return SOAPConnectionFactory.newInstance().createConnection().call(compileRequest(invocation), getWebservice().getWSDL());
 		}
 		finally{
 			connection.close();
 		}
     }
 	
-	public SOAPMessage invoke(Dispatch<SOAPMessage> dispatcher, List<ParameterValue> values) throws SOAPException, IOException {
-		return dispatcher.invoke(compileRequest(values));
+	public SOAPMessage invoke(Dispatch<SOAPMessage> dispatcher, Invocation invocation) throws SOAPException, IOException {
+		return dispatcher.invoke(compileRequest(invocation));
     }
 	
-	private SOAPMessage compileRequest(List<ParameterValue> values) throws SOAPException, IOException {
+	private SOAPMessage compileRequest(Invocation invocation) throws SOAPException, IOException {
         //Create message
 		SOAPMessage soapMessage = MessageFactory.newInstance(getWebservice().getSOAPProtocol()).createMessage();
 		MimeHeaders mimeHeaders = soapMessage.getMimeHeaders();
@@ -73,10 +74,10 @@ public class SOAPConsumer {
 		SOAPBody body = envelope.getBody();
         
         //Prepare Message
-		compileMimeHeaders(mimeHeaders);
-        compileNamespace(envelope);
-        compileSoapHeader(soapHeader, values);
-        compileSoapBody(body, values);
+		compileMimeHeaders(mimeHeaders, invocation);
+        compileNamespace(envelope, invocation);
+        compileSoapHeader(soapHeader, invocation);
+        compileSoapBody(body, invocation);
         
         //Save Message
         soapMessage.saveChanges();
@@ -89,41 +90,38 @@ public class SOAPConsumer {
         return soapMessage;
 	}
 	
-	private void compileMimeHeaders(MimeHeaders headers) {
-		headers.setHeader("SOAPAction", getWebservice().getTargetNamespace() + getWebservice().getOperation());
+	private void compileMimeHeaders(MimeHeaders headers, Invocation invocation) {
+		headers.setHeader("SOAPAction", getWebservice().getTargetNamespace() + invocation.getOperation().getName());
 		headers.setHeader("Content-Type", "text/xml; charset=utf-8");
         headers.setHeader("Connection", "Keep-Alive");
 	}
 	
-	private void compileNamespace(SOAPEnvelope envelope) throws SOAPException {
+	private void compileNamespace(SOAPEnvelope envelope, Invocation invocation) throws SOAPException {
         envelope.addNamespaceDeclaration(NAMESPACE_PREFIX, getWebservice().getTargetNamespace());
 	}
 	
-	private void compileSoapHeader(SOAPHeader header, List<ParameterValue> values) throws SOAPException {
+	private void compileSoapHeader(SOAPHeader header, Invocation invocation) throws SOAPException {
 		//TODO: Preare soapHeader
 	}
 
-	private void compileSoapBody(SOAPBody body, List<ParameterValue> values) throws SOAPException {
+	private void compileSoapBody(SOAPBody body, Invocation invocation) throws SOAPException {
 		//SOAP Operaton
 		SOAPElement operation = null;
 //		SOAPElement operation = body.addChildElement(new QName(getSoapBean().getTargetNamespace(), getSoapBean().getOperation()));
 		if(getWebservice().getTargetNamespace() != null || "".equals(getWebservice().getTargetNamespace()))
-			operation = body.addChildElement(new QName(NAMESPACE_PREFIX + ":" + getWebservice().getOperation()));
+			operation = body.addChildElement(new QName(NAMESPACE_PREFIX + ":" + invocation.getOperation().getName()));
 		else
-			operation = body.addChildElement(new QName(getWebservice().getOperation()));
+			operation = body.addChildElement(new QName(invocation.getOperation().getName()));
 			
-        compileSoapOperation(operation, values);
+        compileSoapOperation(operation, invocation.getOperation().getInput().getParametersSchema(), invocation.getInput());
 	}
 	
-	/**
-	 * Delegate to compileSoapOperation below
-	 * @param operation
-	 * @param input
-	 * @throws SOAPException
-	 */
-	private void compileSoapOperation(SOAPElement operation, List<ParameterValue> values) throws SOAPException{
-		compileSoapOperation(operation, values, targetOperation.getModel());
+	private void compileSoapOperation(SOAPElement operation, List<Schema> model, List<SchemaValue> input) throws SOAPException{
+		for(SchemaValue value : input){
+			
+		}
 	}
+	
 	
 	/**
 	 * Compile the soap operation using the input and model structure
@@ -132,36 +130,36 @@ public class SOAPConsumer {
 	 * @param model
 	 * @throws SOAPException
 	 */
-	private void compileSoapOperation(SOAPElement operation, TO input, TO model) throws SOAPException{
-		//Iterate over the user input data
-		Set<String> keys = input.getAllData().keySet();
-		for(String key : keys){
-			String name = key;
-			
-			//Retrieve the native language value
-			Object nativeValue = input.getData(name);
-			
-			//Prepare node name
-//			QName qname = new QName(getSoapBean().getTargetNamespace(), name);
-			QName qname = new QName(name);
-			SOAPElement inputElement = operation.addChildElement(qname);
-			
-			//Check if its a complex value then handle it recursively
-			if(nativeValue instanceof TO)
-				compileSoapOperation(inputElement, (TO) nativeValue, (TO) model.getData(name));
-			else{
-				//Retrieve the field type
-				XSDType type = (XSDType) model.getData(name);
-				
-				//Convert it to a hard text value
-				String textValue = type.getConverter().toString(nativeValue);
-				
-				//Set element value
-				inputElement.setValue(textValue);
-			}
-			
-		}
-	}
+//	private void compileSoapOperation(SOAPElement operation, List<Schema> model, List<SchemaValue> input) throws SOAPException{
+//		//Iterate over the user input data
+//		Set<String> keys = input.getAllData().keySet();
+//		for(String key : keys){
+//			String name = key;
+//			
+//			//Retrieve the native language value
+//			Object nativeValue = input.getData(name);
+//			
+//			//Prepare node name
+////			QName qname = new QName(getSoapBean().getTargetNamespace(), name);
+//			QName qname = new QName(name);
+//			SOAPElement inputElement = operation.addChildElement(qname);
+//			
+//			//Check if its a complex value then handle it recursively
+//			if(nativeValue instanceof TO)
+//				compileSoapOperation(inputElement, (TO) nativeValue, (TO) model.getData(name));
+//			else{
+//				//Retrieve the field type
+//				XSDType type = (XSDType) model.getData(name);
+//				
+//				//Convert it to a hard text value
+//				String textValue = type.getConverter().toString(nativeValue);
+//				
+//				//Set element value
+//				inputElement.setValue(textValue);
+//			}
+//			
+//		}
+//	}
 	
 	public Definition getWsdlDefinition() {
 		return wsdlDefinition;

@@ -16,16 +16,18 @@ public class Schema extends TO{
 	public static final String NAMESPACE = "NAMESPACE";
 	public static final String TYPE = "TYPE";
 	public static final String INNER = "INNER";
+	public static final String NEXT = "NEXT";
 	
 	public Schema() {
 		// TODO Auto-generated constructor stub
 	}
 	
-	public Schema(String name, Namespace namespace, XSDType type, Schema inner) {
+	public Schema(String name, Namespace namespace, XSDType type, Schema inner, Schema next) {
 		setName(name);
 		setNamespace(namespace);
 		setType(type);
 		setInner(inner);
+		setNext(next);
 	}
 	
 	public String getName(){
@@ -58,6 +60,14 @@ public class Schema extends TO{
 	
 	public void setInner(Schema inner){
 		addData(INNER, inner);
+	}
+	
+	public Schema getNext(){
+		return (Schema) getData(INNER);
+	}
+	
+	public void setNext(Schema inner){
+		addData(NEXT, inner);
 	}
 	
 }

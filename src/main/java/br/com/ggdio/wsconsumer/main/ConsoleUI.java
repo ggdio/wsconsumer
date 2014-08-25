@@ -20,11 +20,11 @@ import javax.xml.xpath.XPathExpressionException;
 
 import org.xml.sax.SAXException;
 
-import br.com.ggdio.wsconsumer.api.Constants;
 import br.com.ggdio.wsconsumer.api.SOAPConsumer;
 import br.com.ggdio.wsconsumer.api.SOAPModelDiscovery;
 import br.com.ggdio.wsconsumer.api.TO;
 import br.com.ggdio.wsconsumer.api.XSDType;
+import br.com.ggdio.wsconsumer.api.constant.Constants;
 import br.com.ggdio.wsconsumer.soap.model.Part;
 
 /**

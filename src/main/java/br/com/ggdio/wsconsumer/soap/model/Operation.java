@@ -64,11 +64,11 @@ public class Operation extends TO {
 	}
 	
 	public Part getOutput(){
-		return (Part) getData(INPUT);
+		return (Part) getData(OUTPUT);
 	}
 	
 	public void setOutput(Part output){
-		addData(INPUT, output);
+		addData(OUTPUT, output);
 	}
 	
 	public Part getFault(){

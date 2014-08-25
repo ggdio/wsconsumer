@@ -1,4 +1,4 @@
-package br.com.ggdio.wsconsumer.api;
+package br.com.ggdio.wsconsumer.api.constant;
 
 /**
  * Module constants
