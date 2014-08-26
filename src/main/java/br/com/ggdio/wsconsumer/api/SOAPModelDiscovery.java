@@ -34,6 +34,7 @@ import br.com.ggdio.wsconsumer.soap.model.Part;
 import br.com.ggdio.wsconsumer.soap.model.Port;
 import br.com.ggdio.wsconsumer.soap.model.Schema;
 import br.com.ggdio.wsconsumer.soap.model.Service;
+import br.com.ggdio.wsconsumer.util.SOAPUtil;
 
 /**
  * SOAP Model Discovery Utility Class
@@ -173,7 +174,8 @@ public final class SOAPModelDiscovery {
 	private static final Part preparePart(String tns, Document document, String partName, Map<String, javax.wsdl.Part> parts) throws XPathExpressionException{
 		//Part definition
 		Part part = new Part();
-		part.setName(partName);
+		if(parts.size() > 1)
+			part.setName(partName);
 		
 		//Scan message schema
 		for(String key : parts.keySet()){
@@ -192,6 +194,10 @@ public final class SOAPModelDiscovery {
 			}
 			else
 				name = partDef.getName();
+			
+			//Set name for single part case, when its defined on schema section of the wsdl
+			if(part.getName().equals(""))
+				part.setName(name);
 			
 			//Use targetNamespace if part hasnt it
 			if(nsUri == null && nsPrefix == null && tns != null){
@@ -269,7 +275,7 @@ public final class SOAPModelDiscovery {
 			previous = model;
 			NamedNodeMap attributes = elements.item(c).getAttributes();
 			String name = attributes.getNamedItem("name").getTextContent();
-			String type = attributes.getNamedItem("type") != null ? removeNSAlias(attributes.getNamedItem("type").getTextContent()) : null;
+			String type = attributes.getNamedItem("type") != null ? SOAPUtil.removeNSAlias(attributes.getNamedItem("type").getTextContent()) : null;
 			String nsPrefix = item.getPrefix();
 			String nsUri = item.getNamespaceURI();
 			
@@ -442,11 +448,6 @@ public final class SOAPModelDiscovery {
 //		return schema;
 //	}
 
-	private static final String removeNSAlias(String value){
-		value = String.valueOf(value);
-		return value.substring(value.indexOf(":") + 1);
-	}
-	
 //	private static final Schema getSchema(Definition definition){
 //	for(Object elm : definition.getTypes().getExtensibilityElements())
 //		if(elm instanceof Schema)

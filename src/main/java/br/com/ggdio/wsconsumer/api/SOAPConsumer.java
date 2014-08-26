@@ -16,17 +16,20 @@ import javax.xml.soap.SOAPEnvelope;
 import javax.xml.soap.SOAPException;
 import javax.xml.soap.SOAPHeader;
 import javax.xml.soap.SOAPMessage;
+import javax.xml.soap.Text;
 import javax.xml.ws.Dispatch;
 
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
+import br.com.ggdio.wsconsumer.converter.Converter;
 import br.com.ggdio.wsconsumer.soap.invoke.Invocation;
 import br.com.ggdio.wsconsumer.soap.invoke.SchemaValue;
 import br.com.ggdio.wsconsumer.soap.model.Instance;
 import br.com.ggdio.wsconsumer.soap.model.Namespace;
 import br.com.ggdio.wsconsumer.soap.model.Part;
 import br.com.ggdio.wsconsumer.soap.model.Schema;
+import br.com.ggdio.wsconsumer.util.SOAPUtil;
 
 /**
  * SOAP Consumer utility
@@ -50,12 +53,14 @@ public class SOAPConsumer {
 		this.webservice = webservice;
 	}
 	
-	public SOAPMessage invoke(Invocation invocation) throws SOAPException, IOException {
+	public SchemaValue invoke(Invocation invocation) throws SOAPException, IOException {
 		SOAPConnection connection = SOAPConnectionFactory.newInstance().createConnection();
 		try{
 			SOAPMessage response = SOAPConnectionFactory.newInstance().createConnection().call(compileRequest(invocation), getWebservice().getWSDL());
-			SchemaValue nativeResponse = parseResponse(response);
-			return response;
+			System.out.print("Response SOAP Message = ");
+			response.writeTo(System.out);
+			System.out.println();
+			return parseResponse(response, invocation.getOperation().getOutput());
 		}
 		finally{
 			connection.close();
@@ -66,16 +71,60 @@ public class SOAPConsumer {
 		return dispatcher.invoke(compileRequest(invocation));
     }
 	
-	private SchemaValue parseResponse(SOAPMessage response) throws SOAPException {
-		parseResponse(response.getSOAPBody().getChildNodes());
+	private SchemaValue parseResponse(SOAPMessage response, Part structure) throws SOAPException {
+		return parseResponse(response.getSOAPBody().getChildNodes(), structure);
 	}
 	
-	private SchemaValue parseResponse(NodeList nodes){
+	private SchemaValue parseResponse(NodeList nodes, Part structure){
+		SchemaValue value = new SchemaValue();
 		for(byte c=0;c<nodes.getLength();c++){
 			Node item = nodes.item(c);
-			item.getNodeName();
+			String nodeName = SOAPUtil.removeNSAlias(item.getNodeName());
+			if(!nodeName.equals(structure.getName())){
+				Schema schema = structure.getParameterSchema(nodeName);
+				if(item.hasChildNodes() && !(item.getFirstChild() instanceof Text)){
+					//INNER SCHEMA
+					value.putInnerParameterValue(nodeName, parseResponse(item.getChildNodes(), schema));
+				}
+				else{
+					//PLAIN SCHEMA
+					String textValue = item.getTextContent();
+					Converter<?> converter = schema.getType().getConverter();
+					Object nativeValue = converter.toObject(textValue);
+					value.putParameterValue(nodeName, nativeValue);
+				}
+			}
+			else{
+				value = parseResponse(item.getChildNodes(), structure);
+			}
+				
 		}
-		return null;
+		return value;
+	}
+	
+	private SchemaValue parseResponse(NodeList nodes, Schema schema){
+		SchemaValue value = new SchemaValue();
+		for(byte c=0;c<nodes.getLength();c++){
+			Node item = nodes.item(c);
+			String nodeName = SOAPUtil.removeNSAlias(item.getNodeName());
+			Schema next = schema;
+			do{
+				if(nodeName.equals(next.getName())){
+					if(next.getInner() != null){
+						//INNER SCHEMA
+						value.putInnerParameterValue(nodeName, parseResponse(item.getChildNodes(), next));
+					}
+					else{
+						//PLAIN SCHEMA
+						String textValue = item.getTextContent();
+						Converter<?> converter = next.getType().getConverter();
+						Object nativeValue = converter.toObject(textValue);
+						value.putParameterValue(nodeName, nativeValue);
+					}
+				}
+			} while((next = next.getNext()) != null);
+		}
+		return value;
 	}
 	
 	private SOAPMessage compileRequest(Invocation invocation) throws SOAPException, IOException {

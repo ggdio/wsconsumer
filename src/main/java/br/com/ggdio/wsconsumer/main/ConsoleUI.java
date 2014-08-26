@@ -1,7 +1,6 @@
 package br.com.ggdio.wsconsumer.main;
 
 import java.io.IOException;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Scanner;
 import java.util.Set;
@@ -9,9 +8,7 @@ import java.util.Set;
 import javax.wsdl.WSDLException;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.soap.SOAPConstants;
-import javax.xml.soap.SOAPElement;
 import javax.xml.soap.SOAPException;
-import javax.xml.soap.SOAPMessage;
 import javax.xml.xpath.XPathExpressionException;
 
 import org.xml.sax.SAXException;
@@ -53,10 +50,9 @@ public class ConsoleUI {
 	 * @throws SAXException 
 	 * @throws XPathExpressionException 
 	 */
-	@SuppressWarnings("rawtypes")
 	public void execute() throws WSDLException, SOAPException, XPathExpressionException, SAXException, IOException, ParserConfigurationException {
 		//1 - User input wsdl and protocol
-		Instance webservice = SOAPModelDiscovery.discoverModel(askWsdl(), askProtocol(), "http://www.w3schools.com/webservices/");
+		Instance webservice = SOAPModelDiscovery.discoverModel(askWsdl(), askProtocol(), "http://tempuri.org/");
 		this.consumer = new SOAPConsumer(webservice);
 		
 		//3 - User choose the service
@@ -76,14 +72,10 @@ public class ConsoleUI {
 		invocation.setInput(values);
 		
 		//7 - User invoke the service
-		SOAPMessage response = invoke();
+		SchemaValue response = invoke();
 		
 		//8 - User configure the response
-		Iterator childElements = response.getSOAPBody().getChildElements();
-		while(childElements.hasNext()){
-			SOAPElement element = (SOAPElement) childElements.next();
-			System.out.println(element.getNodeName());
-		}
+		presentResult(getInvocation().getOperation().getOutput(), response);
 	}
 	
 	/**
@@ -151,7 +143,6 @@ public class ConsoleUI {
 	 * Ask user for target port
 	 * @return
 	 */
-	@SuppressWarnings("unchecked")
 	private Port askPort(){
 		System.out.println("----");
 		System.out.println("Choose one of the ports below:");
@@ -180,7 +171,6 @@ public class ConsoleUI {
 	 * Ask user for target operation
 	 * @return
 	 */
-	@SuppressWarnings("unchecked")
 	private Operation askOperation(){
 		System.out.println("----");
 		System.out.println("Choose one of the operations below:");
@@ -257,15 +247,16 @@ public class ConsoleUI {
 		return values;
 	}
 	
-	private SOAPMessage invoke(){
+	private SchemaValue invoke(){
 		System.out.println("----");
 		System.out.println("Press Enter to Invoke....");
 		getScanner().nextLine();
 		try {
-			SOAPMessage response = getConsumer().invoke(getInvocation());
+			SchemaValue response = getConsumer().invoke(getInvocation());
 			System.out.println("----");
+			System.out.println();
 			System.out.println("Server Response: ");
-			response.writeTo(System.out);
+			System.out.println();
 			return response;
 		} 
 		catch (Exception e) {
@@ -273,6 +264,72 @@ public class ConsoleUI {
 			System.exit(1);
 			return null;
 		}
+	}
+	
+	/**
+	 * Compile SOAPOperation envelope based on part structure and schema value
+	 * @param scope
+	 * @param structure
+	 * @param input
+	 * @throws SOAPException
+	 */
+	private void presentResult(Part structure, SchemaValue input) throws SOAPException{
+		for(String key : structure.getParametersSchemaNames()){
+			//Get native value
+			Object nativeValue = input.getParameterValue(key);
+			
+			//Get schema from part structure
+			Schema schema = structure.getParameterSchema(key);
+			
+			//Handle
+			if(nativeValue instanceof SchemaValue) 
+				//Nested
+				presentResult(schema, (SchemaValue) nativeValue);
+			else 
+				//Plain
+				presentPlainValue(schema, nativeValue);
+		}
+	}
+	
+	/**
+	 * Compile SOAPOperation envelope based on schema model and schema values
+	 * @param scope
+	 * @param innerSchema
+	 * @param input
+	 * @throws SOAPException
+	 */
+	private void presentResult(Schema innerSchema, SchemaValue input) throws SOAPException{
+		Schema next = innerSchema;
+		do{
+			//Get native value
+			Object nativeValue = input.getParameterValue(next.getName());
+			
+			//Handle
+			if(nativeValue instanceof SchemaValue)
+				//Nested
+				presentResult(next.getInner(), (SchemaValue) nativeValue);
+			else
+				//Plain
+				presentPlainValue(next, nativeValue);
+			
+		} while((next = next.getNext()) != null);
+	}
+	
+	/**
+	 * Set an element value based on schema and nativeValue
+	 * @param element
+	 * @param schema
+	 * @param nativeValue
+	 */
+	private void presentPlainValue(Schema schema, Object nativeValue){
+		//Retrieve the field type
+		XSDType type = schema.getType();
+		
+		//Convert it to a hard text value
+		String textValue = type.getConverter().toString(nativeValue);
+		
+		//Set element value
+		System.out.println(schema.getName() + ": " + textValue);
 	}
 	
 	public Scanner getScanner() {
