@@ -1,8 +1,12 @@
 package br.com.ggdio.wsconsumer.soap.model;
 
+import java.util.ArrayList;
 import java.util.List;
 
+import javax.xml.soap.SOAPConstants;
+
 import br.com.ggdio.wsconsumer.api.TO;
+import br.com.ggdio.wsconsumer.api.constant.WSDLConstants;
 
 /**
  * SOAP Webservice Instance Model
@@ -21,7 +25,7 @@ public class Instance extends TO{
 	public static final String SERVICES = "SERVICES";
 
 	public Instance() {
-		// TODO Auto-generated constructor stub
+		this("", SOAPConstants.SOAP_1_1_PROTOCOL, "", WSDLConstants.ELEMENT_FORM_DEFAULT_QUALIFIED, WSDLConstants.STYLE_LITERAL, new ArrayList<Service>());
 	}
 
 	public Instance(String wsdl, String soapProtocol, String targetNamespace, String elementFormDefault, String style, List<Service> services) {

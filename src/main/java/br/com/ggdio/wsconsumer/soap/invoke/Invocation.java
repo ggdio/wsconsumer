@@ -1,7 +1,5 @@
 package br.com.ggdio.wsconsumer.soap.invoke;
 
-import java.util.List;
-
 import br.com.ggdio.wsconsumer.api.TO;
 import br.com.ggdio.wsconsumer.soap.model.Operation;
 import br.com.ggdio.wsconsumer.soap.model.Port;
@@ -25,8 +23,11 @@ public class Invocation extends TO {
 		// TODO Auto-generated constructor stub
 	}
 	
-	public Invocation(Service service, Port port, Operation operation, List<SchemaValue> input) {
-		// TODO Auto-generated constructor stub
+	public Invocation(Service service, Port port, Operation operation, SchemaValue input) {
+		setService(service);
+		setPort(port);
+		setOperation(operation);
+		setInput(input);
 	}
 	
 	public Service getService(){
@@ -53,12 +54,11 @@ public class Invocation extends TO {
 		addData(OPERATION, operation);
 	}
 	
-	@SuppressWarnings("unchecked")
-	public List<SchemaValue> getInput(){
-		return (List<SchemaValue>) getData(INPUT);
+	public SchemaValue getInput(){
+		return (SchemaValue) getData(INPUT);
 	}
 	
-	public void setInput(List<SchemaValue> part){
+	public void setInput(SchemaValue part){
 		addData(INPUT, part);
 	}
 	

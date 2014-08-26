@@ -1,6 +1,6 @@
 package br.com.ggdio.wsconsumer.soap.model;
 
-import java.util.List;
+import java.util.Set;
 
 import br.com.ggdio.wsconsumer.api.TO;
 
@@ -17,7 +17,12 @@ public class Part extends TO{
 	public static final String PARAMETERS_SCHEMA = "PARAMETERS_SCHEMA"; 
 
 	public Part() {
-		// TODO Auto-generated constructor stub
+		this("", new TO());
+	}
+	
+	public Part(String name, TO parametersSchema){
+		addData(NAME, name);
+		addData(PARAMETERS_SCHEMA, parametersSchema);
 	}
 	
 	public String getName(){
@@ -28,13 +33,16 @@ public class Part extends TO{
 		addData(NAME, name);
 	}
 	
-	@SuppressWarnings("unchecked")
-	public List<Schema> getParametersSchema(){
-		return (List<Schema>) getData(PARAMETERS_SCHEMA);
+	public Set<String> getParametersSchemaNames(){
+		return ((TO) getData(PARAMETERS_SCHEMA)).getAllData().keySet();
 	}
 	
-	public void setParametersSchema(List<Schema> schema){
-		addData(PARAMETERS_SCHEMA, schema);
+	public Schema getParameterSchema(String parameterName){
+		return (Schema) ((TO) getData(PARAMETERS_SCHEMA)).getData(parameterName);
+	}
+	
+	public void putParameterSchema(String parameterName, Schema schema){
+		((TO) getData(PARAMETERS_SCHEMA)).addData(parameterName, schema);
 	}
 	
 }

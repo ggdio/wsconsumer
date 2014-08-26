@@ -1,5 +1,6 @@
 package br.com.ggdio.wsconsumer.soap.model;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import br.com.ggdio.wsconsumer.api.TO;
@@ -18,7 +19,7 @@ public class Port extends TO {
 	public static final String OPERATIONS = "OPERATIONS";
 	
 	public Port() {
-		// TODO Auto-generated constructor stub
+		this("", new Namespace(), new ArrayList<Operation>());
 	}
 	
 	public Port(String name, Namespace namespace, List<Operation> operations){

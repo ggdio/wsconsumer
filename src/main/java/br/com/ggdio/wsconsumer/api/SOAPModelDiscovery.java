@@ -22,9 +22,11 @@ import javax.xml.xpath.XPathFactory;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
+import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
+import br.com.ggdio.wsconsumer.api.constant.WSDLConstants;
 import br.com.ggdio.wsconsumer.soap.model.Instance;
 import br.com.ggdio.wsconsumer.soap.model.Namespace;
 import br.com.ggdio.wsconsumer.soap.model.Operation;
@@ -101,8 +103,8 @@ public final class SOAPModelDiscovery {
 					
 					//Prepare values
 					operation.setName(operationDef.getName());
-					operation.setInput(preparePart(document, operationDef.getInput().getMessage().getQName().getLocalPart(), operationDef.getInput().getMessage().getParts()));
-					operation.setOutput(preparePart(document, operationDef.getOutput().getMessage().getQName().getLocalPart(), operationDef.getOutput().getMessage().getParts()));
+					operation.setInput(preparePart(tns, document, operationDef.getInput().getMessage().getQName().getLocalPart(), operationDef.getInput().getMessage().getParts()));
+					operation.setOutput(preparePart(tns, document, operationDef.getOutput().getMessage().getQName().getLocalPart(), operationDef.getOutput().getMessage().getParts()));
 				}
 			}
 		}
@@ -162,16 +164,16 @@ public final class SOAPModelDiscovery {
 	
 	/**
 	 * Scan part
+	 * @param tns 
 	 * @param document
 	 * @param parts
 	 * @return
 	 * @throws XPathExpressionException
 	 */
-	private static final Part preparePart(Document document, String partName, Map<String, javax.wsdl.Part> parts) throws XPathExpressionException{
+	private static final Part preparePart(String tns, Document document, String partName, Map<String, javax.wsdl.Part> parts) throws XPathExpressionException{
 		//Part definition
 		Part part = new Part();
 		part.setName(partName);
-		part.setParametersSchema(new ArrayList<Schema>());
 		
 		//Scan message schema
 		for(String key : parts.keySet()){
@@ -181,25 +183,31 @@ public final class SOAPModelDiscovery {
 			
 			//Check attributes
 			String name = "";
-			String prefix = "";
-			String nsUri = "";
+			String nsPrefix = null;
+			String nsUri = null;
 			if(partDef.getElementName() != null){
 				name = partDef.getElementName().getLocalPart();
-				prefix = partDef.getElementName().getPrefix();
+				nsPrefix = partDef.getElementName().getPrefix();
 				nsUri = partDef.getElementName().getNamespaceURI();
 			}
 			else
 				name = partDef.getName();
 			
+			//Use targetNamespace if part hasnt it
+			if(nsUri == null && nsPrefix == null && tns != null){
+				nsPrefix = WSDLConstants.TNS_PREFIX;
+				nsUri = tns;
+			}
+			
 			//Set namespace prefix and uri
-			Namespace namespace = new Namespace(prefix, nsUri);
+			Namespace namespace = new Namespace(nsPrefix, nsUri);
 			
 			//Check type
 			Schema schema = null;
 			
 			String typeName = partDef.getTypeName() != null ? partDef.getTypeName().getLocalPart() : null;
 			if(typeName == null || "".equals(typeName)){
-				schema = resolveXSDModel(document, name);
+				schema = resolveXSDModel(namespace, document, name);
 //				if(name.equals(operation.getName())){
 //					input = xsdModel;
 //					break;
@@ -221,12 +229,12 @@ public final class SOAPModelDiscovery {
 			}
 			
 			//Save
-			part.getParametersSchema().add(schema);
+			part.putParameterSchema(schema.getName(), schema);
 		}
 		return part;
 	}
 	
-	private static final Schema resolveXSDModel(Object scope, String typeName) throws XPathExpressionException{
+	private static final Schema resolveXSDModel(Namespace partNamespace, Object scope, String typeName) throws XPathExpressionException{
 		//Prepare XPATH
 		XPathFactory factory = XPathFactory.newInstance();
 		XPath xpath = factory.newXPath();
@@ -250,6 +258,7 @@ public final class SOAPModelDiscovery {
 		//Iterate over the elements and fill the model
 		for(byte c=0;c<elements.getLength();c++){
 			Schema model = new Schema();
+			Node item = elements.item(c);
 			
 			//Define root schema
 			if(previous != null)
@@ -261,8 +270,14 @@ public final class SOAPModelDiscovery {
 			NamedNodeMap attributes = elements.item(c).getAttributes();
 			String name = attributes.getNamedItem("name").getTextContent();
 			String type = attributes.getNamedItem("type") != null ? removeNSAlias(attributes.getNamedItem("type").getTextContent()) : null;
-			String nsPrefix = elements.item(c).getPrefix();
-			String nsUri = elements.item(c).getNamespaceURI();
+			String nsPrefix = item.getPrefix();
+			String nsUri = item.getNamespaceURI();
+			
+			//Resolve namespace to part one
+			if(nsUri == null && nsPrefix == null && partNamespace != null){
+				nsPrefix = partNamespace.getPrefix();
+				nsUri = partNamespace.getURI();
+			}
 			
 			model.setNamespace(new Namespace(nsPrefix, nsUri));
 			model.setName(name);
@@ -272,7 +287,7 @@ public final class SOAPModelDiscovery {
 			}
 			//If not, the search for the specific type
 			else{
-				Schema innerType = resolveXSDModel(scope, type);
+				Schema innerType = resolveXSDModel(partNamespace, scope, type);
 				if(innerType != null){
 					//Avoid root element duplicity
 					if(name.equals(typeName))

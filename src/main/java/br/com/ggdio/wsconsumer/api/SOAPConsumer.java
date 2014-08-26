@@ -1,14 +1,8 @@
 package br.com.ggdio.wsconsumer.api;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 import javax.wsdl.Definition;
-import javax.wsdl.Port;
-import javax.wsdl.Service;
 import javax.wsdl.WSDLException;
 import javax.wsdl.factory.WSDLFactory;
 import javax.xml.namespace.QName;
@@ -24,9 +18,14 @@ import javax.xml.soap.SOAPHeader;
 import javax.xml.soap.SOAPMessage;
 import javax.xml.ws.Dispatch;
 
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+
 import br.com.ggdio.wsconsumer.soap.invoke.Invocation;
 import br.com.ggdio.wsconsumer.soap.invoke.SchemaValue;
 import br.com.ggdio.wsconsumer.soap.model.Instance;
+import br.com.ggdio.wsconsumer.soap.model.Namespace;
+import br.com.ggdio.wsconsumer.soap.model.Part;
 import br.com.ggdio.wsconsumer.soap.model.Schema;
 
 /**
@@ -54,7 +53,9 @@ public class SOAPConsumer {
 	public SOAPMessage invoke(Invocation invocation) throws SOAPException, IOException {
 		SOAPConnection connection = SOAPConnectionFactory.newInstance().createConnection();
 		try{
-			return SOAPConnectionFactory.newInstance().createConnection().call(compileRequest(invocation), getWebservice().getWSDL());
+			SOAPMessage response = SOAPConnectionFactory.newInstance().createConnection().call(compileRequest(invocation), getWebservice().getWSDL());
+			SchemaValue nativeResponse = parseResponse(response);
+			return response;
 		}
 		finally{
 			connection.close();
@@ -64,6 +65,18 @@ public class SOAPConsumer {
 	public SOAPMessage invoke(Dispatch<SOAPMessage> dispatcher, Invocation invocation) throws SOAPException, IOException {
 		return dispatcher.invoke(compileRequest(invocation));
     }
+	
+	private SchemaValue parseResponse(SOAPMessage response) throws SOAPException {
+		parseResponse(response.getSOAPBody().getChildNodes());
+	}
+	
+	private SchemaValue parseResponse(NodeList nodes){
+		for(byte c=0;c<nodes.getLength();c++){
+			Node item = nodes.item(c);
+			item.getNodeName();
+		}
+		return null;
+	}
 	
 	private SOAPMessage compileRequest(Invocation invocation) throws SOAPException, IOException {
         //Create message
@@ -108,20 +121,99 @@ public class SOAPConsumer {
 		//SOAP Operaton
 		SOAPElement operation = null;
 //		SOAPElement operation = body.addChildElement(new QName(getSoapBean().getTargetNamespace(), getSoapBean().getOperation()));
-		if(getWebservice().getTargetNamespace() != null || "".equals(getWebservice().getTargetNamespace()))
+		if(getWebservice().getTargetNamespace() != null && !"".equals(getWebservice().getTargetNamespace()))
 			operation = body.addChildElement(new QName(NAMESPACE_PREFIX + ":" + invocation.getOperation().getName()));
 		else
 			operation = body.addChildElement(new QName(invocation.getOperation().getName()));
 			
-        compileSoapOperation(operation, invocation.getOperation().getInput().getParametersSchema(), invocation.getInput());
+		//Prepare operation structure
+        compileSoapOperation(operation, invocation.getOperation().getInput(), invocation.getInput());
 	}
 	
-	private void compileSoapOperation(SOAPElement operation, List<Schema> model, List<SchemaValue> input) throws SOAPException{
-		for(SchemaValue value : input){
+	/**
+	 * Compile SOAPOperation envelope based on part structure and schema value
+	 * @param scope
+	 * @param structure
+	 * @param input
+	 * @throws SOAPException
+	 */
+	private void compileSoapOperation(SOAPElement scope, Part structure, SchemaValue input) throws SOAPException{
+		for(String key : structure.getParametersSchemaNames()){
+			//Get native value
+			Object nativeValue = input.getParameterValue(key);
 			
+			//Get schema from part structure
+			Schema schema = structure.getParameterSchema(key);
+			
+			//Prepare element
+			SOAPElement element = addElement(scope, schema);
+			
+			//Handle
+			if(nativeValue instanceof SchemaValue) 
+				//Nested
+				compileSoapOperation(element, schema, (SchemaValue) nativeValue);
+			else 
+				//Plain
+				setElementValue(element, schema, nativeValue);
 		}
 	}
 	
+	/**
+	 * Compile SOAPOperation envelope based on schema model and schema values
+	 * @param scope
+	 * @param innerSchema
+	 * @param input
+	 * @throws SOAPException
+	 */
+	private void compileSoapOperation(SOAPElement scope, Schema innerSchema, SchemaValue input) throws SOAPException{
+		Schema next = innerSchema;
+		do{
+			//Get native value
+			Object nativeValue = input.getParameterValue(next.getName());
+			
+			//Prepare element
+			SOAPElement element = addElement(scope, next);
+			
+			//Handle
+			if(nativeValue instanceof SchemaValue)
+				//Nested
+				compileSoapOperation(element, next.getInner(), (SchemaValue) nativeValue);
+			else
+				//Plain
+				setElementValue(element, next, nativeValue);
+			
+		} while((next = next.getNext()) != null);
+	}
+	
+	/**
+	 * Add child element to parent
+	 * @param parent
+	 * @param schema
+	 * @return SOAPElement
+	 * @throws SOAPException
+	 */
+	private SOAPElement addElement(SOAPElement parent, Schema schema) throws SOAPException{
+		Namespace namespace = schema.getNamespace();
+		return parent.addChildElement(schema.getName(), namespace.getPrefix(), namespace.getURI());
+	}
+	
+	/**
+	 * Set an element value based on schema and nativeValue
+	 * @param element
+	 * @param schema
+	 * @param nativeValue
+	 */
+	private void setElementValue(SOAPElement element, Schema schema, Object nativeValue){
+		//Retrieve the field type
+		XSDType type = schema.getType();
+		
+		//Convert it to a hard text value
+		String textValue = type.getConverter().toString(nativeValue);
+		
+		//Set element value
+		element.setValue(textValue);
+	}
+		
 	
 	/**
 	 * Compile the soap operation using the input and model structure
@@ -169,35 +261,35 @@ public class SOAPConsumer {
 		return webservice;
 	}
 	
-	public Service getService(String serviceName){
-		for(Object value : getWsdlDefinition().getServices().values())
-			if(value instanceof Service){
-				QName qName = ((Service) value).getQName();
-				if(qName.getLocalPart().equals(serviceName))
-					return (Service) value;
-			}
-		return null;
-	}
-	
-	public List<Service> getServices() {
-		List<Service> services = new ArrayList<>();
-		for(Object value : getWsdlDefinition().getServices().values())
-			if(value instanceof Service)
-				services.add((Service) value);
-		return services;
-	}
-	
-	@SuppressWarnings("unchecked")
-	public Port getPort(String serviceName, String portName){
-		Service service = getService(serviceName);
-		Map<String, Port> ports = service.getPorts();
-		Object[] keySet = (Object[]) ports.keySet().toArray();
-		for(byte c=0;c<keySet.length;c++){
-			String key = keySet[c].toString();
-			if(ports.get(key).getName().equals(portName))
-				return ports.get(key);
-		}
-		return null;
-	}
+//	public Service getService(String serviceName){
+//		for(Object value : getWsdlDefinition().getServices().values())
+//			if(value instanceof Service){
+//				QName qName = ((Service) value).getQName();
+//				if(qName.getLocalPart().equals(serviceName))
+//					return (Service) value;
+//			}
+//		return null;
+//	}
+//	
+//	public List<Service> getServices() {
+//		List<Service> services = new ArrayList<>();
+//		for(Object value : getWsdlDefinition().getServices().values())
+//			if(value instanceof Service)
+//				services.add((Service) value);
+//		return services;
+//	}
+//	
+//	@SuppressWarnings("unchecked")
+//	public Port getPort(String serviceName, String portName){
+//		Service service = getService(serviceName);
+//		Map<String, Port> ports = service.getPorts();
+//		Object[] keySet = (Object[]) ports.keySet().toArray();
+//		for(byte c=0;c<keySet.length;c++){
+//			String key = keySet[c].toString();
+//			if(ports.get(key).getName().equals(portName))
+//				return ports.get(key);
+//		}
+//		return null;
+//	}
 	
 }

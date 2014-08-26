@@ -1,5 +1,6 @@
 package br.com.ggdio.wsconsumer.soap.model;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import br.com.ggdio.wsconsumer.api.TO;
@@ -18,7 +19,7 @@ public class Service extends TO{
 	private static final String PORTS = "PORTS";
 	
 	public Service() {
-		// TODO Auto-generated constructor stub
+		this("", new Namespace(), new ArrayList<Port>());
 	}
 	
 	public Service(String name, Namespace namespace, List<Port> ports){

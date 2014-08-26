@@ -19,7 +19,7 @@ public class Schema extends TO{
 	public static final String NEXT = "NEXT";
 	
 	public Schema() {
-		// TODO Auto-generated constructor stub
+		this("", new Namespace(), XSDType.STRING, null, null);
 	}
 	
 	public Schema(String name, Namespace namespace, XSDType type, Schema inner, Schema next) {

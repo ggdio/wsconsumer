@@ -15,7 +15,7 @@ public class Namespace extends TO {
 	public static final String URI = "URI";
 	
 	public Namespace() {
-		// TODO Auto-generated constructor stub
+		this("", "");
 	}
 	
 	public Namespace(String prefix, String uri){

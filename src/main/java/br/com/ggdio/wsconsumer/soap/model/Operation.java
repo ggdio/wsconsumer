@@ -19,7 +19,7 @@ public class Operation extends TO {
 	public static final String FAULT = "FAULT";
 	
 	public Operation() {
-		// TODO Auto-generated constructor stub
+		this("", new Namespace(), new Part(), new Part(), new Part(), new Part());
 	}
 	
 	public Operation(String name, Namespace namespace, Part header, Part input, Part output, Part fault){

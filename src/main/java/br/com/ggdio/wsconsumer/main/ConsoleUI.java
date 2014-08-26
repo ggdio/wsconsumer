@@ -3,13 +3,9 @@ package br.com.ggdio.wsconsumer.main;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Scanner;
 import java.util.Set;
 
-import javax.wsdl.BindingOperation;
-import javax.wsdl.Port;
-import javax.wsdl.Service;
 import javax.wsdl.WSDLException;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.soap.SOAPConstants;
@@ -22,10 +18,15 @@ import org.xml.sax.SAXException;
 
 import br.com.ggdio.wsconsumer.api.SOAPConsumer;
 import br.com.ggdio.wsconsumer.api.SOAPModelDiscovery;
-import br.com.ggdio.wsconsumer.api.TO;
 import br.com.ggdio.wsconsumer.api.XSDType;
-import br.com.ggdio.wsconsumer.api.constant.Constants;
+import br.com.ggdio.wsconsumer.soap.invoke.Invocation;
+import br.com.ggdio.wsconsumer.soap.invoke.SchemaValue;
+import br.com.ggdio.wsconsumer.soap.model.Instance;
+import br.com.ggdio.wsconsumer.soap.model.Operation;
 import br.com.ggdio.wsconsumer.soap.model.Part;
+import br.com.ggdio.wsconsumer.soap.model.Port;
+import br.com.ggdio.wsconsumer.soap.model.Schema;
+import br.com.ggdio.wsconsumer.soap.model.Service;
 
 /**
  * Console application for tests
@@ -35,7 +36,9 @@ import br.com.ggdio.wsconsumer.soap.model.Part;
 public class ConsoleUI {
 	
 	private final Scanner scanner;
+	
 	private SOAPConsumer consumer;
+	private final Invocation invocation = new Invocation();
 	
 	public ConsoleUI(Scanner scanner) {
 		this.scanner = scanner;
@@ -52,34 +55,28 @@ public class ConsoleUI {
 	 */
 	@SuppressWarnings("rawtypes")
 	public void execute() throws WSDLException, SOAPException, XPathExpressionException, SAXException, IOException, ParserConfigurationException {
-		//1 - User input the wsdl url
-		final String wsdl = askWsdl();
-		TO configuration = new TO();
-		configuration.addData(Constants.KEY_WSDL, wsdl);
-		Part soapBean = new Part(configuration, new TO(), new TO());
-		this.consumer = new SOAPConsumer(soapBean);
-		
-		//2 - User choose the soap protocol
-		final String protocol = askProtocol();
+		//1 - User input wsdl and protocol
+		Instance webservice = SOAPModelDiscovery.discoverModel(askWsdl(), askProtocol(), "http://www.w3schools.com/webservices/");
+		this.consumer = new SOAPConsumer(webservice);
 		
 		//3 - User choose the service
-		final String service = askService();
+		final Service service = askService();
+		invocation.setService(service);
 		
 		//4 - User choose the port
-		final String port = askPort(service);
+		final Port port = askPort();
+		invocation.setPort(port);
 		
 		//5 - User choose the port
-		final String operation = askOperation(service, port);
-		
-		//6 - Scan wsdl structure
-		TO model = SOAPModelDiscovery.discoverModel(wsdl, protocol, "http://api.unicorp.com.br/soap", service, port, operation, null, null);
-		soapBean.setModel(model);
+		final Operation operation = askOperation();
+		invocation.setOperation(operation);
 		
 		//6 - User set the parameters
-		TO values = askParts(soapBean.getInputParts());
+		SchemaValue values = askParts();
+		invocation.setInput(values);
 		
 		//7 - User invoke the service
-		SOAPMessage response = invoke(values);
+		SOAPMessage response = invoke();
 		
 		//8 - User configure the response
 		Iterator childElements = response.getSOAPBody().getChildElements();
@@ -126,13 +123,13 @@ public class ConsoleUI {
 	 * Ask user for target service
 	 * @return
 	 */
-	private String askService(){
+	private Service askService(){
 		System.out.println("----");
 		System.out.println("Choose one of the services below:");
-		List<Service> services = getConsumer().getServices();
+		List<Service> services = getConsumer().getWebservice().getServices();
 		for(byte c=0;c<services.size();c++){
 			System.out.print("[" + (c+1) + "] - ");
-			System.out.println(services.get(c).getQName().getLocalPart());
+			System.out.println(services.get(c).getName());
 		}
 		System.out.println();
 		System.out.print("Service ID: ");
@@ -141,7 +138,7 @@ public class ConsoleUI {
 			byte id = Byte.parseByte(inputStr);
 			if(id <= 0 || id > services.size())
 				throw new IllegalArgumentException("Wrong Service ID");
-			return services.get(id-1).getQName().getLocalPart();
+			return services.get(id-1);
 		}
 		catch(Exception e){
 			System.err.println(e.getMessage());
@@ -155,24 +152,22 @@ public class ConsoleUI {
 	 * @return
 	 */
 	@SuppressWarnings("unchecked")
-	private String askPort(String service){
+	private Port askPort(){
 		System.out.println("----");
 		System.out.println("Choose one of the ports below:");
-		Map<String, Port> ports = getConsumer().getService(service).getPorts();
-		Object[] keySet = (Object[]) ports.keySet().toArray();
-		for(byte c=0;c<keySet.length;c++){
-			String key = keySet[c].toString();
+		List<Port> ports = getInvocation().getService().getPorts();
+		for(byte c=0;c<ports.size();c++){
 			System.out.print("[" + (c+1) + "] - ");
-			System.out.println(ports.get(key).getName());
+			System.out.println(ports.get(c).getName());
 		}
 		System.out.println();
 		System.out.print("Port ID: ");
 		String inputStr = getScanner().nextLine();
 		try{
 			byte id = Byte.parseByte(inputStr);
-			if(id <= 0 || id > keySet.length)
+			if(id <= 0 || id > ports.size())
 				throw new IllegalArgumentException("Wrong Port ID");
-			return ports.get(keySet[id-1]).getName();
+			return ports.get(id-1);
 		}
 		catch(Exception e){
 			System.err.println(e.getMessage());
@@ -186,10 +181,10 @@ public class ConsoleUI {
 	 * @return
 	 */
 	@SuppressWarnings("unchecked")
-	private String askOperation(String service, String port){
+	private Operation askOperation(){
 		System.out.println("----");
 		System.out.println("Choose one of the operations below:");
-		List<BindingOperation> operations = getConsumer().getPort(service, port).getBinding().getBindingOperations();
+		List<Operation> operations = getInvocation().getPort().getOperations();
 		for(byte c=0;c<operations.size();c++){
 			System.out.print("[" + (c+1) + "] - ");
 			System.out.println(operations.get(c).getName());
@@ -201,7 +196,7 @@ public class ConsoleUI {
 			byte id = Byte.parseByte(inputStr);
 			if(id <= 0 || id > operations.size())
 				throw new IllegalArgumentException("Wrong Operation ID");
-			return operations.get(id-1).getOperation().getName();
+			return operations.get(id-1);
 		}
 		catch(Exception e){
 			System.err.println(e.getMessage());
@@ -214,10 +209,10 @@ public class ConsoleUI {
 	 * Ask user for operation parts(parameters)
 	 * @return 
 	 */
-	private TO askParts(TO model){
+	private SchemaValue askParts(){
 		System.out.println("----");
 		System.out.println("Set the parameters values below:");
-		return fillParts(model);
+		return fillParts(invocation.getOperation().getInput());
 	}
 	
 	/**
@@ -225,8 +220,8 @@ public class ConsoleUI {
 	 * @param model
 	 * @return TO Model(user input data)
 	 */
-	private TO fillParts(TO model){
-		return fillParts(model, 0);
+	private SchemaValue fillParts(Part part){
+		return fillParts(part, 0);
 	}
 	
 	
@@ -236,37 +231,38 @@ public class ConsoleUI {
 	 * @param level
 	 * @return TO Model(user input data)
 	 */
-	private TO fillParts(TO model, int level){
-		TO values = new TO();
-		Set<String> keys = model.getAllData().keySet();
+	private SchemaValue fillParts(Part part, int level){
+		SchemaValue values = new SchemaValue();
+		Set<String> keys = part.getParametersSchemaNames();
 		if(level>0) System.out.println();
 		for(String key : keys){
 			String name = key;
-			Object type = model.getData(key);
+			Schema schema = part.getParameterSchema(key);
 			for(byte c=0;c<level;c++)
 				System.out.print("--");
-			if(type instanceof TO){
-				System.out.print(name + "]->");
-				TO innerValues = fillParts((TO) model.getData(key), level + 1);
-				values.addData(name, innerValues);
+			if(schema.getInner() != null){
+				//Nested
+//				System.out.print(name + "]->");
+//				TO innerValues = fillParts((TO) model.getData(key), level + 1);
+//				values.addData(name, innerValues);
 			}
 			else{
-				XSDType xsdType = (XSDType) type;
+				XSDType xsdType = schema.getType();
 				System.out.print(name + "[" + xsdType.toString() + "]: ");
 				String textValue = getScanner().nextLine();
 				Object nativeValue = xsdType.getConverter().toObject(textValue);
-				values.addData(name, nativeValue);
+				values.putParameterValue(name, nativeValue);
 			}
 		}
 		return values;
 	}
 	
-	private SOAPMessage invoke(TO values){
+	private SOAPMessage invoke(){
 		System.out.println("----");
 		System.out.println("Press Enter to Invoke....");
 		getScanner().nextLine();
 		try {
-			SOAPMessage response = getConsumer().invoke(values);
+			SOAPMessage response = getConsumer().invoke(getInvocation());
 			System.out.println("----");
 			System.out.println("Server Response: ");
 			response.writeTo(System.out);
@@ -285,6 +281,10 @@ public class ConsoleUI {
 	
 	public SOAPConsumer getConsumer() {
 		return consumer;
+	}
+	
+	public Invocation getInvocation() {
+		return invocation;
 	}
 	
 	public void setConsumer(SOAPConsumer consumer) {
