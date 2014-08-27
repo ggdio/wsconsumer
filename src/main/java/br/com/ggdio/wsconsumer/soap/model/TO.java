@@ -1,4 +1,4 @@
-package br.com.ggdio.wsconsumer.api;
+package br.com.ggdio.wsconsumer.soap.model;
 
 import java.io.Serializable;
 import java.util.HashMap;

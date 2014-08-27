@@ -2,7 +2,8 @@ package br.com.ggdio.wsconsumer.soap.invoke;
 
 import java.util.Set;
 
-import br.com.ggdio.wsconsumer.api.TO;
+import br.com.ggdio.wsconsumer.soap.model.Schema;
+import br.com.ggdio.wsconsumer.soap.model.TO;
 
 /**
  * SOAP Webserivce Schema Value model
@@ -14,6 +15,7 @@ public class SchemaValue extends TO {
 	private static final long serialVersionUID = 1L;
 	
 	public static final String PARAMETERS_VALUES = "PARAMETERS_VALUES";
+	public static final String SCHEMA = "SCHEMA";
 	
 	public SchemaValue() {
 		this(new TO());
@@ -49,6 +51,14 @@ public class SchemaValue extends TO {
 	
 	public void putInnerParameterValue(String name, SchemaValue inner){
 		((TO) getData(PARAMETERS_VALUES)).addData(name, inner);
+	}
+	
+	public Schema getSchema(){
+		return (Schema) getData(SCHEMA);
+	}
+	
+	public void setSchema(Schema schema){
+		addData(SCHEMA, schema);
 	}
 	
 }

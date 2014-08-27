@@ -1,9 +1,9 @@
 package br.com.ggdio.wsconsumer.soap.invoke;
 
-import br.com.ggdio.wsconsumer.api.TO;
 import br.com.ggdio.wsconsumer.soap.model.Operation;
 import br.com.ggdio.wsconsumer.soap.model.Port;
 import br.com.ggdio.wsconsumer.soap.model.Service;
+import br.com.ggdio.wsconsumer.soap.model.TO;
 
 /**
  * SOAP Webservice Invocation Model

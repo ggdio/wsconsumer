@@ -55,6 +55,14 @@ public class SOAPConsumer {
 		this.webservice = webservice;
 	}
 	
+	/**
+	 * Invoke the webservice
+	 * @param invocation
+	 * @return
+	 * @throws SOAPException
+	 * @throws IOException
+	 * @throws XPathExpressionException
+	 */
 	public SchemaValue invoke(Invocation invocation) throws SOAPException, IOException, XPathExpressionException {
 		SOAPConnection connection = SOAPConnectionFactory.newInstance().createConnection();
 		try{
@@ -69,14 +77,37 @@ public class SOAPConsumer {
 		}
     }
 	
-	public SOAPMessage invoke(Dispatch<SOAPMessage> dispatcher, Invocation invocation) throws SOAPException, IOException {
+	/**
+	 * Invoke the webservice using dispatcher
+	 * @param dispatcher
+	 * @param invocation
+	 * @return
+	 * @throws SOAPException
+	 * @throws IOException
+	 */
+	public SOAPMessage invoke(Invocation invocation, Dispatch<SOAPMessage> dispatcher) throws SOAPException, IOException {
 		return dispatcher.invoke(compileRequest(invocation));
     }
 	
+	/**
+	 * Parse response based on nodeList and schema structure
+	 * @param response
+	 * @param structure
+	 * @return
+	 * @throws SOAPException
+	 * @throws XPathExpressionException
+	 */
 	private SchemaValue parseResponse(SOAPMessage response, Part structure) throws SOAPException, XPathExpressionException {
 		return parseResponse(response.getSOAPBody().getChildNodes(), structure);
 	}
 	
+	/**
+	 * Parse response based on nodeList and schema structure
+	 * @param scope
+	 * @param structure
+	 * @return
+	 * @throws XPathExpressionException
+	 */
 	private SchemaValue parseResponse(NodeList scope, Part structure) throws XPathExpressionException {
 		SchemaValue root = new SchemaValue();
 		XPathFactory factory = XPathFactory.newInstance();
@@ -90,6 +121,7 @@ public class SOAPConsumer {
 			if(schema.getInner() != null){
 				//NESTED FIELDS
 				root.putInnerParameterValue(schema.getName(), parseResponse(xPath, scope, schema.getInner()));
+				root.setSchema(schema);
 			}
 			else{
 				//PLAIN FIELD
@@ -99,13 +131,28 @@ public class SOAPConsumer {
 		return root;
 	}
 	
+	/**
+	 * Parse response based on nodeList and schema structure
+	 * @param xPath
+	 * @param scope
+	 * @param schema
+	 * @return
+	 * @throws XPathExpressionException
+	 */
 	private SchemaValue parseResponse(XPath xPath, NodeList scope, Schema schema) throws XPathExpressionException{
 		SchemaValue nested = new SchemaValue();
 		Schema next = schema;
 		do{
-			if(next.getInner() != null){
+			/*if(next.getType() == XSDType.LIST && next.getInner() != null){
+				//MULTIPLE FIELDS
+				List<SchemaValue> list = new ArrayList<SchemaValue>();
+				nested.putParameterValue(next.getName(), list);
+				parseResponse(xPath, scope, schema.getInner(), list);
+			}
+			else*/ if(next.getInner() != null){
 				//NESTED FIELDS
 				nested.putInnerParameterValue(next.getName(), parseResponse(xPath, scope, next.getInner()));
+				nested.setSchema(next);
 			}
 			else{
 				//PLAIN FIELD
@@ -114,10 +161,28 @@ public class SOAPConsumer {
 		} while((next = next.getNext()) != null);
 		return nested;
 	}
+	
+//	private void parseResponse(XPath xPath, NodeList scope, Schema schema, List<SchemaValue> list) throws XPathExpressionException{
+//		NodeList items = search(schema.getName(), xPath, scope);
+//		for(byte c=0;c<items.getLength();c++){
+//			SchemaValue value = new SchemaValue();
+//			Node item = items.item(c);
+//			setSchemaValue(value, schema, item);
+//			list.add(value);
+//		}
+//	}
 
+	/**
+	 * Resolve value
+	 * @param xPath
+	 * @param scope
+	 * @param nested
+	 * @param schema
+	 * @throws XPathExpressionException
+	 */
 	private void resolveValue(XPath xPath, NodeList scope, SchemaValue nested, Schema schema) throws XPathExpressionException {
 		//Search for the plain node by schema name
-		NodeList result = (NodeList) xPath.compile("//*[local-name()='" + schema.getName() + "']").evaluate(scope, XPathConstants.NODESET);
+		NodeList result = search(schema.getName(), xPath, scope);
 		
 		//Handle blank or null
 		if(result.getLength() == 0){
@@ -126,14 +191,35 @@ public class SOAPConsumer {
 		}
 		
 		//Retrieve the item
-		Node item = result.item(0);
-		
+		setSchemaValue(nested, schema, result.item(0));
+	}
+
+	/**
+	 * Set schema value
+	 * @param nested
+	 * @param schema
+	 * @param item
+	 */
+	private void setSchemaValue(SchemaValue nested, Schema schema, Node item) {
 		//Recover the plain value and convert it to a native one
 		String plainValue = item.getTextContent();
 		Object nativeValue = schema.getType().getConverter().toObject(plainValue);
 		
 		//Put the parameter native value
 		nested.putParameterValue(schema.getName(), nativeValue);
+		nested.setSchema(schema);
+	}
+
+	/**
+	 * Search for an element based on its name
+	 * @param typeName
+	 * @param xPath
+	 * @param scope
+	 * @return
+	 * @throws XPathExpressionException
+	 */
+	private NodeList search(String typeName, XPath xPath, NodeList scope) throws XPathExpressionException {
+		return (NodeList) xPath.compile("//*[local-name()='" + typeName + "']").evaluate(scope, XPathConstants.NODESET);
 	}
 	
 //	private SchemaValue parseResponse(NodeList nodes, Part structure){
@@ -198,6 +284,13 @@ public class SOAPConsumer {
 //		return value;
 //	}
 	
+	/**
+	 * Compile the request based on invocation bean
+	 * @param invocation
+	 * @return
+	 * @throws SOAPException
+	 * @throws IOException
+	 */
 	private SOAPMessage compileRequest(Invocation invocation) throws SOAPException, IOException {
         //Create message
 		SOAPMessage soapMessage = MessageFactory.newInstance(getWebservice().getSOAPProtocol()).createMessage();
@@ -223,20 +316,43 @@ public class SOAPConsumer {
         return soapMessage;
 	}
 	
+	/**
+	 * Compile request mime headers
+	 * @param headers
+	 * @param invocation
+	 */
 	private void compileMimeHeaders(MimeHeaders headers, Invocation invocation) {
 		headers.setHeader("SOAPAction", getWebservice().getTargetNamespace() + invocation.getOperation().getName());
 		headers.setHeader("Content-Type", "text/xml; charset=utf-8");
         headers.setHeader("Connection", "Keep-Alive");
 	}
 	
+	/**
+	 * Compile namespace
+	 * @param envelope
+	 * @param invocation
+	 * @throws SOAPException
+	 */
 	private void compileNamespace(SOAPEnvelope envelope, Invocation invocation) throws SOAPException {
         envelope.addNamespaceDeclaration(NAMESPACE_PREFIX, getWebservice().getTargetNamespace());
 	}
 	
+	/**
+	 * Compile SOAP Header
+	 * @param header
+	 * @param invocation
+	 * @throws SOAPException
+	 */
 	private void compileSoapHeader(SOAPHeader header, Invocation invocation) throws SOAPException {
 		//TODO: Preare soapHeader
 	}
 
+	/**
+	 * Compile SOAP Body
+	 * @param body
+	 * @param invocation
+	 * @throws SOAPException
+	 */
 	private void compileSoapBody(SOAPBody body, Invocation invocation) throws SOAPException {
 		//SOAP Operaton
 		SOAPElement operation = null;
@@ -373,43 +489,20 @@ public class SOAPConsumer {
 //		}
 //	}
 	
+	/**
+	 * Get the WSDL Definition
+	 * @return {@link Definition}
+	 */
 	public Definition getWsdlDefinition() {
 		return wsdlDefinition;
 	}
 	
+	/**
+	 * Get the webservice instance configuration
+	 * @return {@link Instance}
+	 */
 	public Instance getWebservice() {
 		return webservice;
 	}
-	
-//	public Service getService(String serviceName){
-//		for(Object value : getWsdlDefinition().getServices().values())
-//			if(value instanceof Service){
-//				QName qName = ((Service) value).getQName();
-//				if(qName.getLocalPart().equals(serviceName))
-//					return (Service) value;
-//			}
-//		return null;
-//	}
-//	
-//	public List<Service> getServices() {
-//		List<Service> services = new ArrayList<>();
-//		for(Object value : getWsdlDefinition().getServices().values())
-//			if(value instanceof Service)
-//				services.add((Service) value);
-//		return services;
-//	}
-//	
-//	@SuppressWarnings("unchecked")
-//	public Port getPort(String serviceName, String portName){
-//		Service service = getService(serviceName);
-//		Map<String, Port> ports = service.getPorts();
-//		Object[] keySet = (Object[]) ports.keySet().toArray();
-//		for(byte c=0;c<keySet.length;c++){
-//			String key = keySet[c].toString();
-//			if(ports.get(key).getName().equals(portName))
-//				return ports.get(key);
-//		}
-//		return null;
-//	}
 	
 }

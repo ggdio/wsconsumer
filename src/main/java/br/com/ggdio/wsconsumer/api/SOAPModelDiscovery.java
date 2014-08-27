@@ -44,7 +44,7 @@ import br.com.ggdio.wsconsumer.util.SOAPUtil;
 public final class SOAPModelDiscovery {
 	
 	@SuppressWarnings("unchecked")
-	public static final Instance discoverModel(String wsdl, String protocol, String tns) throws WSDLException, XPathExpressionException, SAXException, IOException, ParserConfigurationException{
+	public static final Instance discoverModel(String wsdl, String protocol, String elementFormDefault, String style) throws WSDLException, XPathExpressionException, SAXException, IOException, ParserConfigurationException{
 		//Webservice instance definition
 		Instance webservice = new Instance();
 		List<Service> services = new ArrayList<>();
@@ -52,10 +52,9 @@ public final class SOAPModelDiscovery {
 		//Prepare parameters values
 		webservice.setWSDL(wsdl);
 		webservice.setSOAPProtocol(protocol);
-		webservice.setTargetNamespace(tns);
 		webservice.setServices(services);
-		webservice.setElementFormDefault("qualified");
-		webservice.setStyle("literal");
+		webservice.setElementFormDefault(elementFormDefault);
+		webservice.setStyle(style);
 		
 		//Prepare the reader
 		WSDLReader reader = WSDLFactory.newInstance().newWSDLReader();
@@ -65,6 +64,10 @@ public final class SOAPModelDiscovery {
         //Get definition and document
 		Definition def = reader.readWSDL(null, wsdl);
 		Document document = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(wsdl);
+		
+		//Set the target namespace
+		String tns = def.getTargetNamespace();
+		webservice.setTargetNamespace(tns);
 		
 		//Scan services
 		Set<QName> serviceKeys = def.getServices().keySet();
@@ -223,25 +226,31 @@ public final class SOAPModelDiscovery {
 			
 			previous = model;
 			NamedNodeMap attributes = elements.item(c).getAttributes();
+			
+			//Resolve attributes
 			String name = attributes.getNamedItem("name").getTextContent();
 			String type = attributes.getNamedItem("type") != null ? SOAPUtil.removeNSAlias(attributes.getNamedItem("type").getTextContent()) : null;
+			String maxOccurs = attributes.getNamedItem("maxOccurs") != null ? attributes.getNamedItem("maxOccurs").getTextContent() : "1";
+			
+			//Prepare namespace
 			String nsPrefix = item.getPrefix();
 			String nsUri = item.getNamespaceURI();
-			
-			//Resolve namespace to part one
 			if(nsUri == null && nsPrefix == null && partNamespace != null){
 				nsPrefix = partNamespace.getPrefix();
 				nsUri = partNamespace.getURI();
 			}
 			
-			model.setNamespace(new Namespace(nsPrefix, nsUri));
+			//Set model initial values
 			model.setName(name);
-			//If exists, then its not composed
+			model.setNamespace(new Namespace(nsPrefix, nsUri));
+			
+			
 			if(XSDType.exists(type)){
+				//If exists type, then its not composed
 				model.setType(XSDType.getXSDType(type));
 			}
-			//If not, the search for the specific type
 			else{
+				//If not, then search for the specific type
 				Schema innerType = resolveXSDModel(partNamespace, scope, type);
 				if(innerType != null){
 					//Avoid root element duplicity
@@ -250,6 +259,10 @@ public final class SOAPModelDiscovery {
 				}
 				model.setType(XSDType.COMPLEX);
 				model.setInner(innerType);
+				
+				//Check if its a List(if so, then wrap it inside another schema)
+				if(maxOccurs.equals("unbounded"))
+					return new Schema(typeName, new Namespace(nsPrefix, nsUri), XSDType.LIST, model, null);
 			}
 		}
 		

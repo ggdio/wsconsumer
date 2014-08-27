@@ -52,7 +52,7 @@ public class ConsoleUI {
 	 */
 	public void execute() throws WSDLException, SOAPException, XPathExpressionException, SAXException, IOException, ParserConfigurationException {
 		//1 - User input wsdl and protocol
-		Instance webservice = SOAPModelDiscovery.discoverModel(askWsdl(), askProtocol(), "http://tempuri.org/");
+		Instance webservice = SOAPModelDiscovery.discoverModel(askWsdl(), askProtocol(), "qualified", "document");
 		this.consumer = new SOAPConsumer(webservice);
 		
 		//3 - User choose the service
@@ -277,11 +277,12 @@ public class ConsoleUI {
 	 * @param input
 	 * @throws SOAPException
 	 */
+//	@SuppressWarnings("unchecked")
 	private void presentResult(int level, SchemaValue input) throws SOAPException{
 		if(level>0) System.out.println();
 		for(String key : input.getParametersNames()){
 			//Get native value
-			Object nativeValue = input.getParameterValue(key);
+			Object plainValue = input.getParameterValue(key);
 			if(level > 0)
 				System.out.print(" ");
 			for(byte c=0;c<level;c++){
@@ -291,14 +292,21 @@ public class ConsoleUI {
 					System.out.print(" ");
 			}
 			//Handle
-			if(nativeValue instanceof SchemaValue) {
+			/*if(nativeValue instanceof List){
+				List<SchemaValue> values = (List<SchemaValue>) nativeValue;
+				for(SchemaValue value : values){
+					presentResult(level + 1, value);
+				}
+			}
+			else*/ if(plainValue instanceof SchemaValue) {
 				//Nested
-				System.out.print("[" + key + "]");
-				presentResult(level + 1, (SchemaValue) nativeValue);
+				SchemaValue nested = (SchemaValue) plainValue;
+				System.out.print("[" + nested.getSchema().getName() + "]");
+				presentResult(level + 1, (SchemaValue) plainValue);
 			}
 			else {
 				//Plain
-				System.out.println(key + ": " + String.valueOf(nativeValue));
+				System.out.println(key + ": " + String.valueOf(plainValue));
 			}
 		}
 	}

@@ -2,8 +2,6 @@ package br.com.ggdio.wsconsumer.soap.model;
 
 import java.util.Set;
 
-import br.com.ggdio.wsconsumer.api.TO;
-
 /**
  * SOAP Webservice Part Model
  * @author Guilherme Dio
