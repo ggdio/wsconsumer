@@ -1,6 +1,5 @@
 package br.com.ggdio.wsconsumer.soap.model;
 
-import br.com.ggdio.wsconsumer.api.XSDType;
 
 /**
  * SOAP Webservice Schema model

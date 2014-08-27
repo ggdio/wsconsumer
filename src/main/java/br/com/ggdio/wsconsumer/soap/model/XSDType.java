@@ -1,4 +1,4 @@
-package br.com.ggdio.wsconsumer.api;
+package br.com.ggdio.wsconsumer.soap.model;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;

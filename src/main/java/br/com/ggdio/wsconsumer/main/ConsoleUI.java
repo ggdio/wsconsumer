@@ -15,7 +15,6 @@ import org.xml.sax.SAXException;
 
 import br.com.ggdio.wsconsumer.api.SOAPConsumer;
 import br.com.ggdio.wsconsumer.api.SOAPModelDiscovery;
-import br.com.ggdio.wsconsumer.api.XSDType;
 import br.com.ggdio.wsconsumer.soap.invoke.Invocation;
 import br.com.ggdio.wsconsumer.soap.invoke.SchemaValue;
 import br.com.ggdio.wsconsumer.soap.model.Instance;
@@ -24,6 +23,7 @@ import br.com.ggdio.wsconsumer.soap.model.Part;
 import br.com.ggdio.wsconsumer.soap.model.Port;
 import br.com.ggdio.wsconsumer.soap.model.Schema;
 import br.com.ggdio.wsconsumer.soap.model.Service;
+import br.com.ggdio.wsconsumer.soap.model.XSDType;
 
 /**
  * Console application for tests
@@ -232,9 +232,9 @@ public class ConsoleUI {
 				System.out.print("--");
 			if(schema.getInner() != null){
 				//Nested
-//				System.out.print(name + "]->");
-//				TO innerValues = fillParts((TO) model.getData(key), level + 1);
-//				values.addData(name, innerValues);
+				System.out.print(name + "]->");
+				SchemaValue nested = fillParts(schema.getInner(), level + 1);
+				values.putInnerParameterValue(name, nested);
 			}
 			else{
 				XSDType xsdType = schema.getType();
@@ -247,6 +247,26 @@ public class ConsoleUI {
 		return values;
 	}
 	
+	private SchemaValue fillParts(Schema schema, int level) {
+		SchemaValue nested = new SchemaValue();
+		Schema next = schema;
+		do{
+			if(next.getInner() != null){
+				//NESTED FIELDS
+				nested.putInnerParameterValue(next.getName(), fillParts(next.getInner(), level + 1));
+			}
+			else{
+				//PLAIN FIELD
+				XSDType xsdType = next.getType();
+				System.out.print(next.getName() + "[" + xsdType.toString() + "]: ");
+				String textValue = getScanner().nextLine();
+				Object nativeValue = xsdType.getConverter().toObject(textValue);
+				nested.putParameterValue(next.getName(), nativeValue);
+			}
+		} while((next = next.getNext()) != null);
+		return nested;
+	}
+
 	private SchemaValue invoke(){
 		System.out.println("----");
 		System.out.println("Press Enter to Invoke....");

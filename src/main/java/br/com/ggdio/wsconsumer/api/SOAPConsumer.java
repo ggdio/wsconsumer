@@ -32,6 +32,7 @@ import br.com.ggdio.wsconsumer.soap.model.Instance;
 import br.com.ggdio.wsconsumer.soap.model.Namespace;
 import br.com.ggdio.wsconsumer.soap.model.Part;
 import br.com.ggdio.wsconsumer.soap.model.Schema;
+import br.com.ggdio.wsconsumer.soap.model.XSDType;
 
 /**
  * SOAP Consumer utility
@@ -387,7 +388,7 @@ public class SOAPConsumer {
 			//Handle
 			if(nativeValue instanceof SchemaValue) 
 				//Nested
-				compileSoapOperation(element, schema, (SchemaValue) nativeValue);
+				compileSoapOperation(element, schema.getInner(), (SchemaValue) nativeValue);
 			else 
 				//Plain
 				setElementValue(element, schema, nativeValue);

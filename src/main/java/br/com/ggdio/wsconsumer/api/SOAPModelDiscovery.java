@@ -34,6 +34,7 @@ import br.com.ggdio.wsconsumer.soap.model.Part;
 import br.com.ggdio.wsconsumer.soap.model.Port;
 import br.com.ggdio.wsconsumer.soap.model.Schema;
 import br.com.ggdio.wsconsumer.soap.model.Service;
+import br.com.ggdio.wsconsumer.soap.model.XSDType;
 import br.com.ggdio.wsconsumer.util.SOAPUtil;
 
 /**
