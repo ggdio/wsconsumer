@@ -109,58 +109,7 @@ public final class SOAPModelDiscovery {
 				}
 			}
 		}
-		
 		return webservice;
-		
-//		Service service = def.getService(new QName(tns, serviceName));
-//		Port port = service.getPort(portName);
-//		Operation operation = port.getBinding().getBindingOperation(operationName, inputName, outputName).getOperation();
-//		
-//		//Prepare output
-//		Map<String, Part> outParts = operation.getOutput().getMessage().getParts();
-//		for(String key : outParts.keySet()){
-//			//Recover part
-//			Part part = outParts.get(key);
-//			
-//			//Check name
-//			String name = part.getElementName() != null ? part.getElementName().getLocalPart() : null;
-//			if(name == null || "".equals(name))
-//				name = part.getName();
-//			
-//			//Check type
-//			Object type = part.getTypeName() != null ? part.getTypeName().getLocalPart() : null;
-//			if(type == null || "".equals(type)){
-//				TO xsdModel = resolveXSDModel(document, name);
-//				type = xsdModel != null ? xsdModel : XSDType.STRING;
-//			}
-//			else{
-//				if(XSDType.exists(String.valueOf(type)))
-//					type = XSDType.getXSDType(String.valueOf(type));
-//				else
-//					type = XSDType.STRING;
-//			}
-//			
-//			//Save
-//			output.addData(name, type);
-//		}
-//		
-//		//Set configuration
-//		configuration.addData(Constants.KEY_WSDL, wsdl);
-//		configuration.addData(Constants.KEY_SOAP_PROTOCOL, protocol);
-//		configuration.addData(Constants.KEY_TARGET_NAMESPACE, tns);
-//		configuration.addData(Constants.KEY_SERVICE, serviceName);
-//		configuration.addData(Constants.KEY_PORT, portName);
-//		configuration.addData(Constants.KEY_OPERATION, operationName);
-//		configuration.addData(Constants.KEY_OPERATION_INPUT_NAME, inputName);
-//		configuration.addData(Constants.KEY_OPERATION_INPUT_NAME, outputName);
-//		configuration.addData(Constants.KEY_SOAP_PROTOCOL, protocol);
-//		
-//		//Set model
-//		model.setInputSchema(input);
-//		model.setOutputSchema(output);
-//		model.setConfiguration(configuration);
-//		
-//		return model;
 	}
 	
 	/**

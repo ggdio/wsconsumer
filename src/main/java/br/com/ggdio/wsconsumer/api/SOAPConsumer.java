@@ -1,6 +1,7 @@
 package br.com.ggdio.wsconsumer.api;
 
 import java.io.IOException;
+import java.util.Set;
 
 import javax.wsdl.Definition;
 import javax.wsdl.WSDLException;
@@ -16,20 +17,21 @@ import javax.xml.soap.SOAPEnvelope;
 import javax.xml.soap.SOAPException;
 import javax.xml.soap.SOAPHeader;
 import javax.xml.soap.SOAPMessage;
-import javax.xml.soap.Text;
 import javax.xml.ws.Dispatch;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathExpressionException;
+import javax.xml.xpath.XPathFactory;
 
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
-import br.com.ggdio.wsconsumer.converter.Converter;
 import br.com.ggdio.wsconsumer.soap.invoke.Invocation;
 import br.com.ggdio.wsconsumer.soap.invoke.SchemaValue;
 import br.com.ggdio.wsconsumer.soap.model.Instance;
 import br.com.ggdio.wsconsumer.soap.model.Namespace;
 import br.com.ggdio.wsconsumer.soap.model.Part;
 import br.com.ggdio.wsconsumer.soap.model.Schema;
-import br.com.ggdio.wsconsumer.util.SOAPUtil;
 
 /**
  * SOAP Consumer utility
@@ -53,7 +55,7 @@ public class SOAPConsumer {
 		this.webservice = webservice;
 	}
 	
-	public SchemaValue invoke(Invocation invocation) throws SOAPException, IOException {
+	public SchemaValue invoke(Invocation invocation) throws SOAPException, IOException, XPathExpressionException {
 		SOAPConnection connection = SOAPConnectionFactory.newInstance().createConnection();
 		try{
 			SOAPMessage response = SOAPConnectionFactory.newInstance().createConnection().call(compileRequest(invocation), getWebservice().getWSDL());
@@ -71,61 +73,130 @@ public class SOAPConsumer {
 		return dispatcher.invoke(compileRequest(invocation));
     }
 	
-	private SchemaValue parseResponse(SOAPMessage response, Part structure) throws SOAPException {
+	private SchemaValue parseResponse(SOAPMessage response, Part structure) throws SOAPException, XPathExpressionException {
 		return parseResponse(response.getSOAPBody().getChildNodes(), structure);
 	}
 	
-	private SchemaValue parseResponse(NodeList nodes, Part structure){
-		SchemaValue value = new SchemaValue();
-		for(byte c=0;c<nodes.getLength();c++){
-			Node item = nodes.item(c);
-			String nodeName = SOAPUtil.removeNSAlias(item.getNodeName());
-			if(!nodeName.equals(structure.getName())){
-				Schema schema = structure.getParameterSchema(nodeName);
-				if(item.hasChildNodes() && !(item.getFirstChild() instanceof Text)){
-					//INNER SCHEMA
-					value.putInnerParameterValue(nodeName, parseResponse(item.getChildNodes(), schema));
-				}
-				else{
-					//PLAIN SCHEMA
-					String textValue = item.getTextContent();
-					Converter<?> converter = schema.getType().getConverter();
-					Object nativeValue = converter.toObject(textValue);
-					value.putParameterValue(nodeName, nativeValue);
-				}
+	private SchemaValue parseResponse(NodeList scope, Part structure) throws XPathExpressionException {
+		SchemaValue root = new SchemaValue();
+		XPathFactory factory = XPathFactory.newInstance();
+		XPath xPath = factory.newXPath();
+		Set<String> names = structure.getParametersSchemaNames();
+		for(String name : names){
+			
+			//Recover the schema by name
+			Schema schema = structure.getParameterSchema(name);
+			
+			if(schema.getInner() != null){
+				//NESTED FIELDS
+				root.putInnerParameterValue(schema.getName(), parseResponse(xPath, scope, schema.getInner()));
 			}
 			else{
-				value = parseResponse(item.getChildNodes(), structure);
+				//PLAIN FIELD
+				resolveValue(xPath, scope, root, schema);
 			}
-				
 		}
-		return value;
+		return root;
 	}
 	
-	private SchemaValue parseResponse(NodeList nodes, Schema schema){
-		SchemaValue value = new SchemaValue();
-		for(byte c=0;c<nodes.getLength();c++){
-			Node item = nodes.item(c);
-			String nodeName = SOAPUtil.removeNSAlias(item.getNodeName());
-			Schema next = schema;
-			do{
-				if(nodeName.equals(next.getName())){
-					if(next.getInner() != null){
-						//INNER SCHEMA
-						value.putInnerParameterValue(nodeName, parseResponse(item.getChildNodes(), next));
-					}
-					else{
-						//PLAIN SCHEMA
-						String textValue = item.getTextContent();
-						Converter<?> converter = next.getType().getConverter();
-						Object nativeValue = converter.toObject(textValue);
-						value.putParameterValue(nodeName, nativeValue);
-					}
-				}
-			} while((next = next.getNext()) != null);
-		}
-		return value;
+	private SchemaValue parseResponse(XPath xPath, NodeList scope, Schema schema) throws XPathExpressionException{
+		SchemaValue nested = new SchemaValue();
+		Schema next = schema;
+		do{
+			if(next.getInner() != null){
+				//NESTED FIELDS
+				nested.putInnerParameterValue(next.getName(), parseResponse(xPath, scope, next.getInner()));
+			}
+			else{
+				//PLAIN FIELD
+				resolveValue(xPath, scope, nested, next);
+			}
+		} while((next = next.getNext()) != null);
+		return nested;
 	}
+
+	private void resolveValue(XPath xPath, NodeList scope, SchemaValue nested, Schema schema) throws XPathExpressionException {
+		//Search for the plain node by schema name
+		NodeList result = (NodeList) xPath.compile("//*[local-name()='" + schema.getName() + "']").evaluate(scope, XPathConstants.NODESET);
+		
+		//Handle blank or null
+		if(result.getLength() == 0){
+			nested.putParameterValue(schema.getName(), null);
+			return;
+		}
+		
+		//Retrieve the item
+		Node item = result.item(0);
+		
+		//Recover the plain value and convert it to a native one
+		String plainValue = item.getTextContent();
+		Object nativeValue = schema.getType().getConverter().toObject(plainValue);
+		
+		//Put the parameter native value
+		nested.putParameterValue(schema.getName(), nativeValue);
+	}
+	
+//	private SchemaValue parseResponse(NodeList nodes, Part structure){
+//		SchemaValue value = new SchemaValue();
+//		for(byte c=0;c<nodes.getLength();c++){
+//			Node item = nodes.item(c);
+//			String nodeName = SOAPUtil.removeNSAlias(item.getNodeName());
+//			if(!nodeName.equals(structure.getName())){
+//				Schema schema = structure.getParameterSchema(nodeName);
+//				Node aux = item;
+//				while(schema == null){
+//					if(!item.hasChildNodes()) break;
+//					aux = aux.getChildNodes().item(0);
+//					nodeName = SOAPUtil.removeNSAlias(item.getNodeName());
+//					schema = structure.getParameterSchema(nodeName);
+//					if(schema != null)
+//						item = aux.getParentNode();
+//				}
+//				if(item.hasChildNodes() && !(item.getFirstChild() instanceof Text)){
+//					//INNER SCHEMA
+//					value.putInnerParameterValue(nodeName, parseResponse(item.getChildNodes(), schema));
+//				}
+//				else{
+//					//PLAIN SCHEMA
+//					String textValue = item.getTextContent();
+//					Converter<?> converter = schema.getType().getConverter();
+//					Object nativeValue = converter.toObject(textValue);
+//					value.putParameterValue(nodeName, nativeValue);
+//				}
+//			}
+//			else{
+//				//ROOT
+//				value = parseResponse(item.getChildNodes(), structure);
+//			}
+//				
+//		}
+//		return value;
+//	}
+//	
+//	private SchemaValue parseResponse(NodeList nodes, Schema schema){
+//		SchemaValue value = new SchemaValue();
+//		for(byte c=0;c<nodes.getLength();c++){
+//			Node item = nodes.item(c);
+//			String nodeName = SOAPUtil.removeNSAlias(item.getNodeName());
+//			Schema next = schema;
+//			do{
+//				if(nodeName.equals(next.getName())){
+//					if(next.getInner() != null){
+//						//INNER SCHEMA
+//						value.putInnerParameterValue(nodeName, parseResponse(item.getChildNodes(), next));
+//					}
+//					else{
+//						//PLAIN SCHEMA
+//						String textValue = item.getTextContent();
+//						Converter<?> converter = next.getType().getConverter();
+//						Object nativeValue = converter.toObject(textValue);
+//						value.putParameterValue(nodeName, nativeValue);
+//					}
+//				}
+//			} while((next = next.getNext()) != null);
+//		}
+//		return value;
+//	}
 	
 	private SOAPMessage compileRequest(Invocation invocation) throws SOAPException, IOException {
         //Create message

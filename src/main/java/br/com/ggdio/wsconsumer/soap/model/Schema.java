@@ -63,7 +63,7 @@ public class Schema extends TO{
 	}
 	
 	public Schema getNext(){
-		return (Schema) getData(INNER);
+		return (Schema) getData(NEXT);
 	}
 	
 	public void setNext(Schema inner){

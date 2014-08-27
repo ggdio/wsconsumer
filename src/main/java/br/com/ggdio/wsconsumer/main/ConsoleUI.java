@@ -75,7 +75,7 @@ public class ConsoleUI {
 		SchemaValue response = invoke();
 		
 		//8 - User configure the response
-		presentResult(getInvocation().getOperation().getOutput(), response);
+		presentResult(response);
 	}
 	
 	/**
@@ -266,6 +266,10 @@ public class ConsoleUI {
 		}
 	}
 	
+	private void presentResult(SchemaValue input) throws SOAPException{
+		presentResult(0, input);
+	}
+	
 	/**
 	 * Compile SOAPOperation envelope based on part structure and schema value
 	 * @param scope
@@ -273,63 +277,30 @@ public class ConsoleUI {
 	 * @param input
 	 * @throws SOAPException
 	 */
-	private void presentResult(Part structure, SchemaValue input) throws SOAPException{
-		for(String key : structure.getParametersSchemaNames()){
+	private void presentResult(int level, SchemaValue input) throws SOAPException{
+		if(level>0) System.out.println();
+		for(String key : input.getParametersNames()){
 			//Get native value
 			Object nativeValue = input.getParameterValue(key);
-			
-			//Get schema from part structure
-			Schema schema = structure.getParameterSchema(key);
-			
+			if(level > 0)
+				System.out.print(" ");
+			for(byte c=0;c<level;c++){
+				if(c == level-1)
+					System.out.print("--");
+				else
+					System.out.print(" ");
+			}
 			//Handle
-			if(nativeValue instanceof SchemaValue) 
+			if(nativeValue instanceof SchemaValue) {
 				//Nested
-				presentResult(schema, (SchemaValue) nativeValue);
-			else 
+				System.out.print("[" + key + "]");
+				presentResult(level + 1, (SchemaValue) nativeValue);
+			}
+			else {
 				//Plain
-				presentPlainValue(schema, nativeValue);
+				System.out.println(key + ": " + String.valueOf(nativeValue));
+			}
 		}
-	}
-	
-	/**
-	 * Compile SOAPOperation envelope based on schema model and schema values
-	 * @param scope
-	 * @param innerSchema
-	 * @param input
-	 * @throws SOAPException
-	 */
-	private void presentResult(Schema innerSchema, SchemaValue input) throws SOAPException{
-		Schema next = innerSchema;
-		do{
-			//Get native value
-			Object nativeValue = input.getParameterValue(next.getName());
-			
-			//Handle
-			if(nativeValue instanceof SchemaValue)
-				//Nested
-				presentResult(next.getInner(), (SchemaValue) nativeValue);
-			else
-				//Plain
-				presentPlainValue(next, nativeValue);
-			
-		} while((next = next.getNext()) != null);
-	}
-	
-	/**
-	 * Set an element value based on schema and nativeValue
-	 * @param element
-	 * @param schema
-	 * @param nativeValue
-	 */
-	private void presentPlainValue(Schema schema, Object nativeValue){
-		//Retrieve the field type
-		XSDType type = schema.getType();
-		
-		//Convert it to a hard text value
-		String textValue = type.getConverter().toString(nativeValue);
-		
-		//Set element value
-		System.out.println(schema.getName() + ": " + textValue);
 	}
 	
 	public Scanner getScanner() {
