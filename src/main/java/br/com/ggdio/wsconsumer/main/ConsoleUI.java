@@ -3,7 +3,6 @@ package br.com.ggdio.wsconsumer.main;
 import java.io.IOException;
 import java.util.List;
 import java.util.Scanner;
-import java.util.Set;
 
 import javax.wsdl.WSDLException;
 import javax.xml.parsers.ParserConfigurationException;
@@ -211,7 +210,7 @@ public class ConsoleUI {
 	 * @return TO Model(user input data)
 	 */
 	private SchemaValue fillParts(Part part){
-		return fillParts(part, 0);
+		return fillParts(part.getRootSchema(), 0);
 	}
 	
 	
@@ -221,33 +220,47 @@ public class ConsoleUI {
 	 * @param level
 	 * @return TO Model(user input data)
 	 */
-	private SchemaValue fillParts(Part part, int level){
-		SchemaValue values = new SchemaValue();
-		Set<String> keys = part.getParametersSchemaNames();
-		if(level>0) System.out.println();
-		for(String key : keys){
-			String name = key;
-			Schema schema = part.getParameterSchema(key);
-			for(byte c=0;c<level;c++)
-				System.out.print("--");
-			if(schema.getInner() != null){
-				//Nested
-				System.out.print(name + "]->");
-				SchemaValue nested = fillParts(schema.getInner(), level + 1);
-				values.putInnerParameterValue(name, nested);
-			}
-			else{
-				XSDType xsdType = schema.getType();
-				System.out.print(name + "[" + xsdType.toString() + "]: ");
-				String textValue = getScanner().nextLine();
-				Object nativeValue = xsdType.getConverter().toObject(textValue);
-				values.putParameterValue(name, nativeValue);
-			}
-		}
-		return values;
-	}
+//	private SchemaValue fillParts(Part part, int level){
+//		SchemaValue values = new SchemaValue();
+//		if(level>0) System.out.println();
+//		Schema schema = part.getRootSchema();
+//		for(byte c=0;c<level;c++)
+//			System.out.print("--");
+//		if(schema.getInner() != null){
+//			//Nested
+//			System.out.print(schema.getName() + "]->");
+//			SchemaValue nested = fillParts(schema.getInner(), level + 1);
+//			values.putInnerParameterValue(schema.getName(), nested);
+//		}
+//		else{
+//			XSDType xsdType = schema.getType();
+//			System.out.print(schema.getName() + "[" + xsdType.toString() + "]: ");
+//			String textValue = getScanner().nextLine();
+//			Object nativeValue = xsdType.getConverter().toObject(textValue);
+//			values.putParameterValue(schema.getName(), nativeValue);
+//		}
+//		if(schema.getNext() != null){
+//			Schema schemaNext = schema.getNext();
+//			System.out.println();
+//			if(schema.getNext().getInner() != null){
+//				SchemaValue next = fillParts(schemaNext, level);
+//				values.putParameterValue(schemaNext.getName(), next);
+//			}
+//			else{
+//				//PLAIN FIELD
+//				XSDType xsdType = schemaNext.getType();
+//				System.out.print(schemaNext.getName() + "[" + xsdType.toString() + "]: ");
+//				String textValue = getScanner().nextLine();
+//				Object nativeValue = xsdType.getConverter().toObject(textValue);
+//				values.putParameterValue(schemaNext.getName(), nativeValue);
+//			}
+//		}
+//		return values;
+//	}
 	
 	private SchemaValue fillParts(Schema schema, int level) {
+		if(schema == null)
+			return null;
 		SchemaValue nested = new SchemaValue();
 		Schema next = schema;
 		do{
@@ -321,8 +334,12 @@ public class ConsoleUI {
 			else*/ if(plainValue instanceof SchemaValue) {
 				//Nested
 				SchemaValue nested = (SchemaValue) plainValue;
-				System.out.print("[" + nested.getSchema().getName() + "]");
-				presentResult(level + 1, (SchemaValue) plainValue);
+				if(nested.getSchema() != null){
+					System.out.print("[" + nested.getSchema().getName() + "]");
+					presentResult(level + 1, (SchemaValue) plainValue);
+				}
+				else
+					System.out.println();
 			}
 			else {
 				//Plain

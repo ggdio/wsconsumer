@@ -25,6 +25,7 @@ public final class WSDLConstants {
 	public static final String STYLE_LITERAL = "literal";
 	public static final String STYLE_DOCUMENT = "document";
 	
+	public static final String TARGET_NAMESPACE = "targetNamespace";
 	public static final String TNS_PREFIX = "tns";
 	
 }

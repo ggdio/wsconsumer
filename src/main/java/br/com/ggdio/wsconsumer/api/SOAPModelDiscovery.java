@@ -68,6 +68,8 @@ public final class SOAPModelDiscovery {
 		
 		//Set the target namespace
 		String tns = def.getTargetNamespace();
+		if(!tns.endsWith("/"))
+			tns += "/";
 		webservice.setTargetNamespace(tns);
 		
 		//Scan services
@@ -131,6 +133,7 @@ public final class SOAPModelDiscovery {
 			part.setName(partName);
 		
 		//Scan message schema
+		Schema previous = null;
 		for(String key : parts.keySet()){
 			
 			//Recover part
@@ -187,8 +190,18 @@ public final class SOAPModelDiscovery {
 				schema.setType(type);
 			}
 			
-			//Save
-			part.putParameterSchema(schema.getName(), schema);
+			//Prepare next
+			if(previous == null)
+				previous = schema;
+			else{
+				previous.setNext(schema);
+				previous = schema;
+			}
+			
+			//Save root
+			if(part.getRootSchema() == null)
+				part.setRootSchema(schema);
+			
 		}
 		return part;
 	}
@@ -198,23 +211,48 @@ public final class SOAPModelDiscovery {
 		XPathFactory factory = XPathFactory.newInstance();
 		XPath xpath = factory.newXPath();
 		
-		//Queries
-		List<String> queries = Arrays.asList("//definitions/types/schema/simpleType[@name='" + typeName + "']/sequence/element",
-											 "//definitions/types/schema/complexType[@name='" + typeName + "']/sequence/element",
-											 "//definitions/types/schema/element[@name='" + typeName + "']/simpleType/sequence/element",
-											 "//definitions/types/schema/element[@name='" + typeName + "']/complexType/sequence/element",
-											 "//definitions/types/schema/element[@name='" + typeName + "']");
-		//Search
+		//XSD Elements
 		NodeList elements = null;
-		for(String query : queries){
-			elements = (NodeList) xpath.compile(query).evaluate(scope, XPathConstants.NODESET);
-			if(elements.getLength() != 0)
+		String xsdNSURI = "";
+		
+		//Iterate over XSD
+		NodeList xsdSchemas = (NodeList) xpath.compile("//definitions/types/schema").evaluate(scope, XPathConstants.NODESET);
+		for(byte c=0;c<xsdSchemas.getLength();c++){
+			//Get XSD
+			Node xsdSchema = xsdSchemas.item(c);
+			NodeList innerScope = xsdSchema.getChildNodes();
+			
+			//Queries
+			List<String> queries = Arrays.asList("simpleType[@name='" + typeName + "']/sequence/element",
+												 "complexType[@name='" + typeName + "']/sequence/element",
+												 "element[@name='" + typeName + "']/simpleType/sequence/element",
+												 "element[@name='" + typeName + "']/complexType/sequence/element",
+												 "element[@name='" + typeName + "']");
+			//Flag for elements found
+			Boolean found = false;
+
+			//Search
+			for(String query : queries){
+				elements = (NodeList) xpath.compile(query).evaluate(innerScope, XPathConstants.NODESET);
+				found = elements.getLength() > 0;
+				if(found)
+					break;
+			}
+			
+			//Check if the elemets has been found
+			if(found){
+				//Prepare the targetNamespace
+				NamedNodeMap xsdAttrs = xsdSchema.getAttributes();
+				Node attr = xsdAttrs.getNamedItem(WSDLConstants.TARGET_NAMESPACE);
+				if(attr != null)
+					xsdNSURI = attr.getTextContent();
 				break;
+			}
 		}
 		
+		//Iterate over the elements and fill the model
 		Schema root = null;
 		Schema previous = null;
-		//Iterate over the elements and fill the model
 		for(byte c=0;c<elements.getLength();c++){
 			Schema model = new Schema();
 			Node item = elements.item(c);
@@ -236,9 +274,10 @@ public final class SOAPModelDiscovery {
 			//Prepare namespace
 			String nsPrefix = item.getPrefix();
 			String nsUri = item.getNamespaceURI();
-			if(nsUri == null && nsPrefix == null && partNamespace != null){
-				nsPrefix = partNamespace.getPrefix();
-				nsUri = partNamespace.getURI();
+			if(nsUri == null && nsPrefix == null/* && partNamespace != null*/){
+//				nsPrefix = partNamespace.getPrefix();
+//				nsUri = partNamespace.getURI();
+				nsUri = xsdNSURI;
 			}
 			
 			//Set model initial values

@@ -1,6 +1,5 @@
 package br.com.ggdio.wsconsumer.soap.model;
 
-import java.util.Set;
 
 /**
  * SOAP Webservice Part Model
@@ -12,15 +11,15 @@ public class Part extends TO{
 	private static final long serialVersionUID = 1L;
 	
 	public static final String NAME = "NAME";
-	public static final String PARAMETERS_SCHEMA = "PARAMETERS_SCHEMA"; 
+	public static final String ROOT_SCHEMA = "ROOT_SCHEMA"; 
 
 	public Part() {
-		this("", new TO());
+		this("", null);
 	}
 	
-	public Part(String name, TO parametersSchema){
+	public Part(String name, Schema rootSchema){
 		addData(NAME, name);
-		addData(PARAMETERS_SCHEMA, parametersSchema);
+		addData(ROOT_SCHEMA, rootSchema);
 	}
 	
 	public String getName(){
@@ -31,16 +30,16 @@ public class Part extends TO{
 		addData(NAME, name);
 	}
 	
-	public Set<String> getParametersSchemaNames(){
-		return ((TO) getData(PARAMETERS_SCHEMA)).getAllData().keySet();
+//	public Set<String> getParametersSchemaNames(){
+//		return ((TO) getData(ROOT_SCHEMA)).getAllData().keySet();
+//	}
+	
+	public Schema getRootSchema(){
+		return (Schema) getData(ROOT_SCHEMA);
 	}
 	
-	public Schema getParameterSchema(String parameterName){
-		return (Schema) ((TO) getData(PARAMETERS_SCHEMA)).getData(parameterName);
-	}
-	
-	public void putParameterSchema(String parameterName, Schema schema){
-		((TO) getData(PARAMETERS_SCHEMA)).addData(parameterName, schema);
+	public void setRootSchema(Schema schema){
+		addData(ROOT_SCHEMA, schema);
 	}
 	
 }

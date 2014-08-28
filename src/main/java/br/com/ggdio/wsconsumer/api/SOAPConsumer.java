@@ -1,7 +1,6 @@
 package br.com.ggdio.wsconsumer.api;
 
 import java.io.IOException;
-import java.util.Set;
 
 import javax.wsdl.Definition;
 import javax.wsdl.WSDLException;
@@ -113,21 +112,17 @@ public class SOAPConsumer {
 		SchemaValue root = new SchemaValue();
 		XPathFactory factory = XPathFactory.newInstance();
 		XPath xPath = factory.newXPath();
-		Set<String> names = structure.getParametersSchemaNames();
-		for(String name : names){
-			
-			//Recover the schema by name
-			Schema schema = structure.getParameterSchema(name);
-			
-			if(schema.getInner() != null){
-				//NESTED FIELDS
-				root.putInnerParameterValue(schema.getName(), parseResponse(xPath, scope, schema.getInner()));
-				root.setSchema(schema);
-			}
-			else{
-				//PLAIN FIELD
-				resolveValue(xPath, scope, root, schema);
-			}
+		//Recover the schema by name
+		Schema schema = structure.getRootSchema();
+		
+		if(schema.getInner() != null){
+			//NESTED FIELDS
+			root.putInnerParameterValue(schema.getName(), parseResponse(xPath, scope, schema.getInner()));
+			root.setSchema(schema);
+		}
+		else{
+			//PLAIN FIELD
+			resolveValue(xPath, scope, root, schema);
 		}
 		return root;
 	}
@@ -364,7 +359,7 @@ public class SOAPConsumer {
 			operation = body.addChildElement(new QName(invocation.getOperation().getName()));
 			
 		//Prepare operation structure
-        compileSoapOperation(operation, invocation.getOperation().getInput(), invocation.getInput());
+        compileSoapOperation(operation, invocation.getOperation().getInput().getRootSchema(), invocation.getInput());
 	}
 	
 	/**
@@ -374,26 +369,24 @@ public class SOAPConsumer {
 	 * @param input
 	 * @throws SOAPException
 	 */
-	private void compileSoapOperation(SOAPElement scope, Part structure, SchemaValue input) throws SOAPException{
-		for(String key : structure.getParametersSchemaNames()){
-			//Get native value
-			Object nativeValue = input.getParameterValue(key);
-			
-			//Get schema from part structure
-			Schema schema = structure.getParameterSchema(key);
-			
-			//Prepare element
-			SOAPElement element = addElement(scope, schema);
-			
-			//Handle
-			if(nativeValue instanceof SchemaValue) 
-				//Nested
-				compileSoapOperation(element, schema.getInner(), (SchemaValue) nativeValue);
-			else 
-				//Plain
-				setElementValue(element, schema, nativeValue);
-		}
-	}
+//	private void compileSoapOperation(SOAPElement scope, Part structure, SchemaValue input) throws SOAPException{
+//		//Recover root schema
+//		Schema rootSchema = structure.getRootSchema();
+//		
+//		//Get native value
+//		Object nativeValue = input.getParameterValue(rootSchema.getName());
+//		
+//		//Prepare element
+//		SOAPElement element = addElement(scope, rootSchema);
+//		
+//		//Handle
+//		if(nativeValue instanceof SchemaValue) 
+//			//Nested
+//			compileSoapOperation(element, rootSchema.getInner(), (SchemaValue) nativeValue);
+//		else 
+//			//Plain
+//			setElementValue(element, rootSchema, nativeValue);
+//	}
 	
 	/**
 	 * Compile SOAPOperation envelope based on schema model and schema values
@@ -402,11 +395,25 @@ public class SOAPConsumer {
 	 * @param input
 	 * @throws SOAPException
 	 */
-	private void compileSoapOperation(SOAPElement scope, Schema innerSchema, SchemaValue input) throws SOAPException{
-		Schema next = innerSchema;
+	private void compileSoapOperation(SOAPElement scope, Schema schema, SchemaValue input) throws SOAPException{
+		//No parameters required
+		if(schema == null) 
+			return;
+		
+		Schema upper = null;
+		Schema next = schema;
 		do{
 			//Get native value
 			Object nativeValue = input.getParameterValue(next.getName());
+			
+			//Temporary solution while LIST is not yet supported
+			if(next.getType() == XSDType.LIST){
+				upper = next;
+				next = next.getInner();
+				nativeValue = ((SchemaValue) nativeValue).getParameterValue(next.getName());
+			}
+			else
+				upper = null;
 			
 			//Prepare element
 			SOAPElement element = addElement(scope, next);
@@ -418,6 +425,10 @@ public class SOAPConsumer {
 			else
 				//Plain
 				setElementValue(element, next, nativeValue);
+			
+			//Temporary solution while LIST is not yet supported
+			if(upper != null)
+				next = upper;
 			
 		} while((next = next.getNext()) != null);
 	}
