@@ -1,6 +1,11 @@
 package br.com.ggdio.wsconsumer.converter;
 
-public class ObjectConverter implements Converter<Object> {
+/**
+ * Complex element Converter
+ * @author Guilherme Dio
+ *
+ */
+public class ComplexConverter implements Converter<Object> {
 
 	@Override
 	public Object toObject(String value) {

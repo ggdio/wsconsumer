@@ -1,11 +1,11 @@
 package br.com.ggdio.wsconsumer.validator;
 
 /**
- * Validator for string values
+ * Complex element Validator
  * @author Guilherme Dio
  *
  */
-public class ObjectValidator implements Validator {
+public class ComplexValidator implements Validator {
 
 	@Override
 	public void validate(String value) throws ValidatorException {

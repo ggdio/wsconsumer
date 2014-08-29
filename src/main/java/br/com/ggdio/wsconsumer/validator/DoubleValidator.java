@@ -1,5 +1,10 @@
 package br.com.ggdio.wsconsumer.validator;
 
+/**
+ * Double element Validator
+ * @author Guilherme Dio
+ *
+ */
 public class DoubleValidator implements Validator{
 
 	@Override

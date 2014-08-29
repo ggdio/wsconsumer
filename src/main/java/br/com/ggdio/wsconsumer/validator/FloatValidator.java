@@ -1,5 +1,10 @@
 package br.com.ggdio.wsconsumer.validator;
 
+/**
+ * Float element Validator
+ * @author Guilherme Dio
+ *
+ */
 public class FloatValidator implements Validator{
 
 	@Override

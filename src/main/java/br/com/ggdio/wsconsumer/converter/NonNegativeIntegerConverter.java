@@ -1,5 +1,10 @@
 package br.com.ggdio.wsconsumer.converter;
 
+/**
+ * NonNegativeInteger element Converter
+ * @author Guilherme Dio
+ *
+ */
 public class NonNegativeIntegerConverter implements Converter<Integer> {
 
 	@Override

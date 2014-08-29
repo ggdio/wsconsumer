@@ -1,7 +1,7 @@
 package br.com.ggdio.wsconsumer.validator;
 
 /**
- * Validator for string values
+ * Character element Validator
  * @author Guilherme Dio
  *
  */

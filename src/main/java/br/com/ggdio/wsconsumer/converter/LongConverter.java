@@ -1,5 +1,10 @@
 package br.com.ggdio.wsconsumer.converter;
 
+/**
+ * Long element Converter
+ * @author Guilherme Dio
+ *
+ */
 public class LongConverter implements Converter<Long> {
 
 	@Override

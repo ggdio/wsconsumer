@@ -2,6 +2,11 @@ package br.com.ggdio.wsconsumer.converter;
 
 import java.time.LocalDateTime;
 
+/**
+ * Timestamp element Converter
+ * @author Guilherme Dio
+ *
+ */
 public class TimestampConverter implements Converter<LocalDateTime> {
 
 	@Override

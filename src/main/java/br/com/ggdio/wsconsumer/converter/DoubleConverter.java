@@ -1,5 +1,10 @@
 package br.com.ggdio.wsconsumer.converter;
 
+/**
+ * Double element Converter
+ * @author Guilherme Dio
+ *
+ */
 public class DoubleConverter implements Converter<Double> {
 
 	@Override

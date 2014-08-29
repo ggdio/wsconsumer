@@ -1,5 +1,10 @@
 package br.com.ggdio.wsconsumer.converter;
 
+/**
+ * Base64 element Converter
+ * @author Guilherme Dio
+ *
+ */
 public class Base64Converter implements Converter<String> {
 
 	@Override

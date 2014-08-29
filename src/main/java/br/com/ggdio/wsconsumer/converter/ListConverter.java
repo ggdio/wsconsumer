@@ -3,6 +3,11 @@ package br.com.ggdio.wsconsumer.converter;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * List element Converter
+ * @author Guilherme Dio
+ *
+ */
 @SuppressWarnings("rawtypes")
 public class ListConverter implements Converter<List> {
 

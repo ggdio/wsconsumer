@@ -1,5 +1,10 @@
 package br.com.ggdio.wsconsumer.validator;
 
+/**
+ * Decimal element Validator
+ * @author Guilherme Dio
+ *
+ */
 public class DecimalValidator implements Validator{
 
 	@Override

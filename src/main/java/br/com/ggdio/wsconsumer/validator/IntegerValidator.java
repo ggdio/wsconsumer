@@ -1,5 +1,10 @@
 package br.com.ggdio.wsconsumer.validator;
 
+/**
+ * Integer element Validator
+ * @author Guilherme Dio
+ *
+ */
 public class IntegerValidator implements Validator{
 
 	@Override

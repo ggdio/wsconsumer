@@ -1,5 +1,10 @@
 package br.com.ggdio.wsconsumer.validator;
 
+/**
+ * AnyURI element Validator
+ * @author Guilherme Dio
+ *
+ */
 public class AnyURIValidator implements Validator{
 
 	@Override

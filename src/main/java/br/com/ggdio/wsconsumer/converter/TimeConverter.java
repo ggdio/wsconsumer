@@ -2,6 +2,11 @@ package br.com.ggdio.wsconsumer.converter;
 
 import java.time.LocalTime;
 
+/**
+ * Time element Converter
+ * @author Guilherme Dio
+ *
+ */
 public class TimeConverter implements Converter<LocalTime> {
 
 	@Override

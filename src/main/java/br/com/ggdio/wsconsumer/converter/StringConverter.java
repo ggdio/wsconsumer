@@ -1,5 +1,10 @@
 package br.com.ggdio.wsconsumer.converter;
 
+/**
+ * String element Converter
+ * @author Guilherme Dio
+ *
+ */
 public class StringConverter implements Converter<String> {
 
 	@Override

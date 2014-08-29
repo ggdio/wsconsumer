@@ -1,5 +1,10 @@
 package br.com.ggdio.wsconsumer.validator;
 
+/**
+ * NonNegativeInteger element Validator
+ * @author Guilherme Dio
+ *
+ */
 public class NonNegativeIntegerValidator implements Validator{
 
 	@Override

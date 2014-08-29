@@ -23,7 +23,7 @@ import br.com.ggdio.wsconsumer.converter.IntegerConverter;
 import br.com.ggdio.wsconsumer.converter.ListConverter;
 import br.com.ggdio.wsconsumer.converter.LongConverter;
 import br.com.ggdio.wsconsumer.converter.NonNegativeIntegerConverter;
-import br.com.ggdio.wsconsumer.converter.ObjectConverter;
+import br.com.ggdio.wsconsumer.converter.ComplexConverter;
 import br.com.ggdio.wsconsumer.converter.ShortConverter;
 import br.com.ggdio.wsconsumer.converter.StringConverter;
 import br.com.ggdio.wsconsumer.converter.TimeConverter;
@@ -45,7 +45,7 @@ import br.com.ggdio.wsconsumer.validator.IntegerValidator;
 import br.com.ggdio.wsconsumer.validator.ListValidator;
 import br.com.ggdio.wsconsumer.validator.LongValidator;
 import br.com.ggdio.wsconsumer.validator.NonNegativeIntegerValidator;
-import br.com.ggdio.wsconsumer.validator.ObjectValidator;
+import br.com.ggdio.wsconsumer.validator.ComplexValidator;
 import br.com.ggdio.wsconsumer.validator.ShortValidator;
 import br.com.ggdio.wsconsumer.validator.StringValidator;
 import br.com.ggdio.wsconsumer.validator.TimeValidator;
@@ -101,7 +101,7 @@ public enum XSDType {
 	
 	LIST("ws.soap.type.list", List.class, new ListValidator(), new ListConverter()),
 	
-	COMPLEX("ws.soap.type.complex", Object.class, new ObjectValidator(), new ObjectConverter());
+	COMPLEX("ws.soap.type.complex", Object.class, new ComplexValidator(), new ComplexConverter());
 	
 	private final String internalKey;
 	private final Class<?> nativeType;

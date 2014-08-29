@@ -1,5 +1,10 @@
 package br.com.ggdio.wsconsumer.validator;
 
+/**
+ * DateTime element Validator
+ * @author Guilherme Dio
+ *
+ */
 public class DateTimeValidator implements Validator{
 
 	@Override

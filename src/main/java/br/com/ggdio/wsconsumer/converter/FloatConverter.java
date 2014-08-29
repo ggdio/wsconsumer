@@ -1,5 +1,10 @@
 package br.com.ggdio.wsconsumer.converter;
 
+/**
+ * Float element Converter
+ * @author Guilherme Dio
+ *
+ */
 public class FloatConverter implements Converter<Float> {
 
 	@Override

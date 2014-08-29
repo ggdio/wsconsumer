@@ -1,5 +1,10 @@
 package br.com.ggdio.wsconsumer.validator;
 
+/**
+ * Long element Validator
+ * @author Guilherme Dio
+ *
+ */
 public class LongValidator implements Validator{
 
 	@Override

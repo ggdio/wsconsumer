@@ -1,5 +1,10 @@
 package br.com.ggdio.wsconsumer.converter;
 
+/**
+ * Object element Converter
+ * @author Guilherme Dio
+ *
+ */
 public class AnyURIConverter implements Converter<String> {
 
 	@Override

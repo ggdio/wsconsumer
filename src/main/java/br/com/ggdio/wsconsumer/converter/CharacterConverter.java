@@ -1,5 +1,10 @@
 package br.com.ggdio.wsconsumer.converter;
 
+/**
+ * Character element Converter
+ * @author Guilherme Dio
+ *
+ */
 public class CharacterConverter implements Converter<Character> {
 
 	@Override

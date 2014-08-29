@@ -324,7 +324,7 @@ public class ConsoleUI {
 				else
 					System.out.print(" ");
 			}
-			//Handle
+			//Handle List
 			/*if(nativeValue instanceof List){
 				List<SchemaValue> values = (List<SchemaValue>) nativeValue;
 				for(SchemaValue value : values){

@@ -2,6 +2,11 @@ package br.com.ggdio.wsconsumer.converter;
 
 import java.time.LocalDate;
 
+/**
+ * Date element Converter
+ * @author Guilherme Dio
+ *
+ */
 public class DateConverter implements Converter<LocalDate> {
 
 	@Override

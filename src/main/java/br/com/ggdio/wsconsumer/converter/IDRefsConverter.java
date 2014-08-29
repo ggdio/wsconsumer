@@ -1,5 +1,10 @@
 package br.com.ggdio.wsconsumer.converter;
 
+/**
+ * IDRefs element Converter
+ * @author Guilherme Dio
+ *
+ */
 public class IDRefsConverter implements Converter<String> {
 
 	@Override

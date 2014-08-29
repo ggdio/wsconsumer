@@ -1,5 +1,10 @@
 package br.com.ggdio.wsconsumer.validator;
 
+/**
+ * Exception type for validators
+ * @author Guilherme Dio
+ *
+ */
 public class ValidatorException extends RuntimeException {
 
 	private static final long serialVersionUID = 1L;

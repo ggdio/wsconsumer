@@ -1,5 +1,10 @@
 package br.com.ggdio.wsconsumer.converter;
 
+/**
+ * Integer element Converter
+ * @author Guilherme Dio
+ *
+ */
 public class IntegerConverter implements Converter<Integer> {
 
 	@Override

@@ -1,5 +1,10 @@
 package br.com.ggdio.wsconsumer.validator;
 
+/**
+ * Boolean element Validator
+ * @author Guilherme Dio
+ *
+ */
 public class BooleanValidator implements Validator{
 
 	@Override

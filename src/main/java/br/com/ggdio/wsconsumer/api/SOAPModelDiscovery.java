@@ -44,6 +44,19 @@ import br.com.ggdio.wsconsumer.util.SOAPUtil;
  */
 public final class SOAPModelDiscovery {
 	
+	/**
+	 * Discover WSDL structure
+	 * @param wsdl - The wsdl URI
+	 * @param protocol - The SOAP Protocol
+	 * @param elementFormDefault - qualified/unqualified
+	 * @param style - The SOAP style
+	 * @return {@link Instance}
+	 * @throws WSDLException
+	 * @throws XPathExpressionException
+	 * @throws SAXException
+	 * @throws IOException
+	 * @throws ParserConfigurationException
+	 */
 	@SuppressWarnings("unchecked")
 	public static final Instance discoverModel(String wsdl, String protocol, String elementFormDefault, String style) throws WSDLException, XPathExpressionException, SAXException, IOException, ParserConfigurationException{
 		//Webservice instance definition
@@ -120,10 +133,10 @@ public final class SOAPModelDiscovery {
 	
 	/**
 	 * Scan part
-	 * @param tns 
-	 * @param document
-	 * @param parts
-	 * @return
+	 * @param tns - The target namespace
+	 * @param document - The XML document
+	 * @param parts - The WSDL Operation parts
+	 * @return {@link javax.wsdl.Part}
 	 * @throws XPathExpressionException
 	 */
 	private static final Part preparePart(String tns, Document document, String partName, Map<String, javax.wsdl.Part> parts) throws XPathExpressionException{
@@ -206,6 +219,14 @@ public final class SOAPModelDiscovery {
 		return part;
 	}
 	
+	/**
+	 * Resolve the XSD Model
+	 * @param partNamespace - The parent part namespace
+	 * @param scope - The scope(nodeList)
+	 * @param typeName - The type to be scanned
+	 * @return {@link Schema}
+	 * @throws XPathExpressionException - If something wrong occurs while searching for the element
+	 */
 	private static final Schema resolveXSDModel(Namespace partNamespace, Object scope, String typeName) throws XPathExpressionException{
 		//Prepare XPATH
 		XPathFactory factory = XPathFactory.newInstance();

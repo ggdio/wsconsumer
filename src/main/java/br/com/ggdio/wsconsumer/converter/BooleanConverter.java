@@ -1,5 +1,10 @@
 package br.com.ggdio.wsconsumer.converter;
 
+/**
+ * Boolean element Converter
+ * @author Guilherme Dio
+ *
+ */
 public class BooleanConverter implements Converter<Boolean> {
 
 	@Override

@@ -1,5 +1,10 @@
 package br.com.ggdio.wsconsumer.validator;
 
+/**
+ * Byte element Validator
+ * @author Guilherme Dio
+ *
+ */
 public class ByteValidator implements Validator{
 
 	@Override

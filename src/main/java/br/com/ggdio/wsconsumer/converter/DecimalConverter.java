@@ -1,5 +1,10 @@
 package br.com.ggdio.wsconsumer.converter;
 
+/**
+ * Decimal element Converter
+ * @author Guilherme Dio
+ *
+ */
 public class DecimalConverter implements Converter<Double> {
 
 	@Override

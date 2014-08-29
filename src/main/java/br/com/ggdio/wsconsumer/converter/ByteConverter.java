@@ -1,5 +1,10 @@
 package br.com.ggdio.wsconsumer.converter;
 
+/**
+ * Byte element Converter
+ * @author Guilherme Dio
+ *
+ */
 public class ByteConverter implements Converter<Byte> {
 
 	@Override

@@ -1,5 +1,10 @@
 package br.com.ggdio.wsconsumer.validator;
 
+/**
+ * Short element Validator
+ * @author Guilherme Dio
+ *
+ */
 public class ShortValidator implements Validator{
 
 	@Override

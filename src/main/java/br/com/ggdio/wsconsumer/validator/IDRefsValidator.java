@@ -1,5 +1,10 @@
 package br.com.ggdio.wsconsumer.validator;
 
+/**
+ * IDRefs element Validator
+ * @author Guilherme Dio
+ *
+ */
 public class IDRefsValidator implements Validator{
 
 	@Override
