@@ -3,6 +3,8 @@ package br.com.ggdio.wsconsumer.soap.model;
 import java.util.ArrayList;
 import java.util.List;
 
+import br.com.ggdio.wsconsumer.common.model.TO;
+
 /**
  * SOAP Webservice Port model
  * @author Guilherme Dio

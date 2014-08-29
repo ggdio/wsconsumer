@@ -5,7 +5,8 @@ import java.util.List;
 
 import javax.xml.soap.SOAPConstants;
 
-import br.com.ggdio.wsconsumer.api.constant.WSDLConstants;
+import br.com.ggdio.wsconsumer.common.model.TO;
+import br.com.ggdio.wsconsumer.soap.api.constant.WSDLConstants;
 
 /**
  * SOAP Webservice Instance Model

@@ -2,8 +2,8 @@ package br.com.ggdio.wsconsumer.soap.invoke;
 
 import java.util.Set;
 
+import br.com.ggdio.wsconsumer.common.model.TO;
 import br.com.ggdio.wsconsumer.soap.model.Schema;
-import br.com.ggdio.wsconsumer.soap.model.TO;
 
 /**
  * SOAP Webserivce Schema Value model

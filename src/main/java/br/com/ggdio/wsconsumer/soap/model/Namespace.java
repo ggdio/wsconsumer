@@ -1,5 +1,7 @@
 package br.com.ggdio.wsconsumer.soap.model;
 
+import br.com.ggdio.wsconsumer.common.model.TO;
+
 
 /**
  * SOAP Webservice Namespace model
