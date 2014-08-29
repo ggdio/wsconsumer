@@ -42,7 +42,7 @@ import br.com.ggdio.wsconsumer.util.SOAPUtil;
  * @author Guilherme Dio
  *
  */
-public class SOAPModelDiscovery {
+public final class SOAPModelDiscoveryOld {
 	
 	/**
 	 * Discover WSDL structure
@@ -58,7 +58,7 @@ public class SOAPModelDiscovery {
 	 * @throws ParserConfigurationException
 	 */
 	@SuppressWarnings("unchecked")
-	public Instance discoverModel(String wsdl, String protocol, String elementFormDefault, String style) throws WSDLException, XPathExpressionException, SAXException, IOException, ParserConfigurationException{
+	public static final Instance discoverModel(String wsdl, String protocol, String elementFormDefault, String style) throws WSDLException, XPathExpressionException, SAXException, IOException, ParserConfigurationException{
 		//Webservice instance definition
 		Instance webservice = new Instance();
 		List<Service> services = new ArrayList<>();
@@ -139,7 +139,7 @@ public class SOAPModelDiscovery {
 	 * @return {@link javax.wsdl.Part}
 	 * @throws XPathExpressionException
 	 */
-	private Part preparePart(String tns, Document document, String partName, Map<String, javax.wsdl.Part> parts) throws XPathExpressionException{
+	private static final Part preparePart(String tns, Document document, String partName, Map<String, javax.wsdl.Part> parts) throws XPathExpressionException{
 		//Part definition
 		Part part = new Part();
 		if(parts.size() > 1)
@@ -227,7 +227,7 @@ public class SOAPModelDiscovery {
 	 * @return {@link Schema}
 	 * @throws XPathExpressionException - If something wrong occurs while searching for the element
 	 */
-	private Schema resolveXSDModel(Namespace partNamespace, Object scope, String typeName) throws XPathExpressionException{
+	private static final Schema resolveXSDModel(Namespace partNamespace, Object scope, String typeName) throws XPathExpressionException{
 		//Prepare XPATH
 		XPathFactory factory = XPathFactory.newInstance();
 		XPath xpath = factory.newXPath();
@@ -330,7 +330,7 @@ public class SOAPModelDiscovery {
 		return root;
 	}
 	
-//	private Schema newResolveXSDModel(Object scope, String typeName) throws XPathExpressionException{
+//	private static final Schema newResolveXSDModel(Object scope, String typeName) throws XPathExpressionException{
 //		//Object to return
 //		Schema model = new Schema();
 //		
@@ -392,47 +392,47 @@ public class SOAPModelDiscovery {
 //		return model;
 //	}
 //	
-//	private Schema handleDefault(Object scope, NodeList nodeList, XPath xpath, Node node) throws XPathExpressionException {
+//	private static Schema handleDefault(Object scope, NodeList nodeList, XPath xpath, Node node) throws XPathExpressionException {
 //		NamedNodeMap attributes = node.getAttributes();
 //		return null;
 //	}
 //
-//	private Schema handleEnumeration(Object scope, NodeList nodeList, XPath xpath, Node node) throws XPathExpressionException {
+//	private static Schema handleEnumeration(Object scope, NodeList nodeList, XPath xpath, Node node) throws XPathExpressionException {
 //		NamedNodeMap attributes = node.getAttributes();
 //		return null;
 //	}
 //
-//	private Schema handleRestriction(Object scope, NodeList nodeList, XPath xpath, Node node) throws XPathExpressionException {
+//	private static Schema handleRestriction(Object scope, NodeList nodeList, XPath xpath, Node node) throws XPathExpressionException {
 //		NamedNodeMap attributes = node.getAttributes();
 //		return null;
 //	}
 //
-//	private Schema handleExtension(Object scope, NodeList nodeList, XPath xpath, Node node) throws XPathExpressionException {
+//	private static Schema handleExtension(Object scope, NodeList nodeList, XPath xpath, Node node) throws XPathExpressionException {
 //		NamedNodeMap attributes = node.getAttributes();
 //		return null;
 //	}
 //
-//	private Schema handleComplexContent(Object scope, NodeList nodeList, XPath xpath, Node node) throws XPathExpressionException {
+//	private static Schema handleComplexContent(Object scope, NodeList nodeList, XPath xpath, Node node) throws XPathExpressionException {
 //		NamedNodeMap attributes = node.getAttributes();
 //		return null;
 //	}
 //
-//	private Schema handleSequence(Object scope, NodeList nodeList, XPath xpath, Node node) throws XPathExpressionException {
+//	private static Schema handleSequence(Object scope, NodeList nodeList, XPath xpath, Node node) throws XPathExpressionException {
 //		NamedNodeMap attributes = node.getAttributes();
 //		return null;
 //	}
 //
-//	private Schema handleComplexType(Object scope, NodeList nodeList, XPath xpath, Node node) throws XPathExpressionException {
+//	private static Schema handleComplexType(Object scope, NodeList nodeList, XPath xpath, Node node) throws XPathExpressionException {
 //		NamedNodeMap attributes = node.getAttributes();
 //		return null;
 //	}
 //
-//	private Schema handleSimpleType(Object scope, NodeList nodeList, XPath xpath, Node node) throws XPathExpressionException {
+//	private static Schema handleSimpleType(Object scope, NodeList nodeList, XPath xpath, Node node) throws XPathExpressionException {
 //		NamedNodeMap attributes = node.getAttributes();
 //		return null;
 //	}
 //
-//	private Schema handleElement(Object scope, NodeList nodeList, XPath xpath, Node node) throws XPathExpressionException {
+//	private static Schema handleElement(Object scope, NodeList nodeList, XPath xpath, Node node) throws XPathExpressionException {
 //		NamedNodeMap attributes = node.getAttributes();
 //		Namespace namespace = new Namespace(node.getPrefix(), node.getNamespaceURI());
 //		String name = attributes.getNamedItem("name").getTextContent();
@@ -471,7 +471,7 @@ public class SOAPModelDiscovery {
 //		return schema;
 //	}
 
-//	private Schema getSchema(Definition definition){
+//	private static final Schema getSchema(Definition definition){
 //	for(Object elm : definition.getTypes().getExtensibilityElements())
 //		if(elm instanceof Schema)
 //			return (Schema) elm;

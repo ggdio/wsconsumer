@@ -51,7 +51,7 @@ public class ConsoleUI {
 	 */
 	public void execute() throws WSDLException, SOAPException, XPathExpressionException, SAXException, IOException, ParserConfigurationException {
 		//1 - User input wsdl and protocol
-		Instance webservice = SOAPModelDiscovery.discoverModel(askWsdl(), askProtocol(), "qualified", "document");
+		Instance webservice = new SOAPModelDiscovery().discoverModel(askWsdl(), askProtocol(), "qualified", "document");
 		this.consumer = new SOAPConsumer(webservice);
 		
 		//3 - User choose the service
