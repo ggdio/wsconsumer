@@ -1,6 +1,5 @@
 package br.com.ggdio.wsconsumer.common.validator;
 
-import br.com.ggdio.wsconsumer.soap.validator.ValidatorException;
 
 /**
  * Data validation interface

@@ -1,6 +1,7 @@
 package br.com.ggdio.wsconsumer.soap.validator;
 
 import br.com.ggdio.wsconsumer.common.validator.Validator;
+import br.com.ggdio.wsconsumer.common.validator.ValidatorException;
 
 /**
  * List element Validator

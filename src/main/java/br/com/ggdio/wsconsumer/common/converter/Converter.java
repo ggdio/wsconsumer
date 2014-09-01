@@ -1,6 +1,5 @@
 package br.com.ggdio.wsconsumer.common.converter;
 
-import br.com.ggdio.wsconsumer.soap.converter.ConverterException;
 
 /**
  * Data conversion interface

@@ -1,4 +1,4 @@
-package br.com.ggdio.wsconsumer.soap.validator;
+package br.com.ggdio.wsconsumer.common.validator;
 
 /**
  * Exception type for validators

@@ -1,6 +1,10 @@
 package br.com.ggdio.wsconsumer.soap.validator;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+
 import br.com.ggdio.wsconsumer.common.validator.Validator;
+import br.com.ggdio.wsconsumer.common.validator.ValidatorException;
 
 /**
  * Timestamp element Validator
@@ -11,7 +15,12 @@ public class TimestampValidator implements Validator{
 
 	@Override
 	public void validate(String value) throws ValidatorException {
-		// TODO Auto-generated method stub
+		try{
+			LocalDateTime.parse(value, DateTimeFormatter.ISO_DATE_TIME);
+		}
+		catch(Exception e){
+			throw new ValidatorException();
+		}
 	}
 
 }

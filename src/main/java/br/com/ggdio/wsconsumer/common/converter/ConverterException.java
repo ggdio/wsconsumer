@@ -1,4 +1,4 @@
-package br.com.ggdio.wsconsumer.soap.converter;
+package br.com.ggdio.wsconsumer.common.converter;
 
 /**
  * Exception type for Converter

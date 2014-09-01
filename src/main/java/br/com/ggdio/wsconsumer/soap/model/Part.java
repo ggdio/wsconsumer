@@ -32,10 +32,6 @@ public class Part extends TO{
 		addData(NAME, name);
 	}
 	
-//	public Set<String> getParametersSchemaNames(){
-//		return ((TO) getData(ROOT_SCHEMA)).getAllData().keySet();
-//	}
-	
 	public Schema getRootSchema(){
 		return (Schema) getData(ROOT_SCHEMA);
 	}

@@ -1,6 +1,7 @@
 package br.com.ggdio.wsconsumer.soap.converter;
 
 import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 
 import br.com.ggdio.wsconsumer.common.converter.Converter;
 
@@ -13,7 +14,7 @@ public class TimeConverter implements Converter<LocalTime> {
 
 	@Override
 	public LocalTime toObject(String value) {
-		return LocalTime.parse(value);
+		return LocalTime.parse(value, DateTimeFormatter.ISO_TIME);
 	}
 
 	@Override
