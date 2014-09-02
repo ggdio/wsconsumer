@@ -6,7 +6,6 @@ import java.util.Scanner;
 
 import javax.wsdl.WSDLException;
 import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.soap.SOAPConstants;
 import javax.xml.soap.SOAPException;
 import javax.xml.xpath.XPathExpressionException;
 
@@ -51,7 +50,7 @@ public class ConsoleUI {
 	 */
 	public void execute() throws WSDLException, SOAPException, XPathExpressionException, SAXException, IOException, ParserConfigurationException {
 		//1 - User input wsdl and protocol
-		Instance webservice = new SOAPModelDiscovery().discoverModel(askWsdl(), askProtocol(), "qualified", "document");
+		Instance webservice = new SOAPModelDiscovery().discoverModel(askWsdl());
 		this.consumer = new SOAPConsumer(webservice);
 		
 		//3 - User choose the service
@@ -66,6 +65,7 @@ public class ConsoleUI {
 		final Operation operation = askOperation();
 		invocation.setOperation(operation);
 		
+		//Business
 		//6 - User set the parameters
 		SchemaValue values = askParts();
 		invocation.setInput(values);
@@ -84,30 +84,6 @@ public class ConsoleUI {
 	private String askWsdl(){
 		System.out.print("WSDL URL: ");
 		return getScanner().nextLine();
-	}
-	
-	/**
-	 * Ask user for service protocol
-	 * @return
-	 */
-	private String askProtocol(){
-		System.out.println("----");
-		System.out.println("Choose one of the protocols below:");
-		
-		System.out.println("[1] - " + SOAPConstants.SOAP_1_1_PROTOCOL);
-		System.out.println("[2] - " + SOAPConstants.SOAP_1_2_PROTOCOL);
-		System.out.println();
-		System.out.print("Protocol ID: ");
-		
-		String inputStr = getScanner().nextLine();
-		if(String.valueOf(inputStr).equals("1"))
-			return SOAPConstants.SOAP_1_1_PROTOCOL;
-		if(String.valueOf(inputStr).equals("2"))
-			return SOAPConstants.SOAP_1_2_PROTOCOL;
-		
-		System.out.println("Wrong Protocol ID");
-		System.exit(1);
-		return null;
 	}
 	
 	/**

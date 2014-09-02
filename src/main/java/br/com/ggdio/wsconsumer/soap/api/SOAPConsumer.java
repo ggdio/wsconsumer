@@ -289,7 +289,7 @@ public class SOAPConsumer {
 	 */
 	private SOAPMessage compileRequest(Invocation invocation) throws SOAPException, IOException {
         //Create message
-		SOAPMessage soapMessage = MessageFactory.newInstance(getWebservice().getSOAPProtocol()).createMessage();
+		SOAPMessage soapMessage = MessageFactory.newInstance(invocation.getOperation().getSOAPProtocol()).createMessage();
 		MimeHeaders mimeHeaders = soapMessage.getMimeHeaders();
 		SOAPHeader soapHeader = soapMessage.getSOAPHeader();
 		SOAPEnvelope envelope = soapMessage.getSOAPPart().getEnvelope();

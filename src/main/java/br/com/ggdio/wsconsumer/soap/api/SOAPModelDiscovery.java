@@ -10,11 +10,14 @@ import java.util.Set;
 import javax.wsdl.BindingOperation;
 import javax.wsdl.Definition;
 import javax.wsdl.WSDLException;
+import javax.wsdl.extensions.soap.SOAPBody;
+import javax.wsdl.extensions.soap12.SOAP12Body;
 import javax.wsdl.factory.WSDLFactory;
 import javax.wsdl.xml.WSDLReader;
 import javax.xml.namespace.QName;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.soap.SOAPConstants;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
@@ -58,17 +61,17 @@ public class SOAPModelDiscovery {
 	 * @throws ParserConfigurationException
 	 */
 	@SuppressWarnings("unchecked")
-	public Instance discoverModel(String wsdl, String protocol, String elementFormDefault, String style) throws WSDLException, XPathExpressionException, SAXException, IOException, ParserConfigurationException{
+	public Instance discoverModel(String wsdl) throws WSDLException, XPathExpressionException, SAXException, IOException, ParserConfigurationException{
 		//Webservice instance definition
 		Instance webservice = new Instance();
 		List<Service> services = new ArrayList<>();
 		
 		//Prepare parameters values
 		webservice.setWSDL(wsdl);
-		webservice.setSOAPProtocol(protocol);
 		webservice.setServices(services);
-		webservice.setElementFormDefault(elementFormDefault);
-		webservice.setStyle(style);
+		
+		//Should define here the element form default(qualified|unqualified)
+//		webservice.setElementFormDefault(elementFormDefault);
 		
 		//Prepare the reader
 		WSDLReader reader = WSDLFactory.newInstance().newWSDLReader();
@@ -78,7 +81,7 @@ public class SOAPModelDiscovery {
         //Get definition and document
 		Definition def = reader.readWSDL(null, wsdl);
 		Document document = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(wsdl);
-		
+
 		//Set the target namespace
 		String tns = def.getTargetNamespace();
 		if(!tns.endsWith("/"))
@@ -125,6 +128,17 @@ public class SOAPModelDiscovery {
 					operation.setName(operationDef.getName());
 					operation.setInput(preparePart(tns, document, operationDef.getInput().getMessage().getQName().getLocalPart(), operationDef.getInput().getMessage().getParts()));
 					operation.setOutput(preparePart(tns, document, operationDef.getOutput().getMessage().getQName().getLocalPart(), operationDef.getOutput().getMessage().getParts()));
+					
+					//Code responsible for discovering the soap protocol for the target operation
+					Object body = bindingOperation.getBindingInput().getExtensibilityElements().get(0);
+					if(body instanceof SOAP12Body){
+						operation.setSOAPProtocol(SOAPConstants.SOAP_1_2_PROTOCOL);
+						operation.setUse(((SOAP12Body) body).getUse());
+					}
+					else{
+						operation.setSOAPProtocol(SOAPConstants.SOAP_1_1_PROTOCOL);
+						operation.setUse(((SOAPBody) body).getUse());
+					}
 				}
 			}
 		}
@@ -248,7 +262,8 @@ public class SOAPModelDiscovery {
 												 "complexType[@name='" + typeName + "']/sequence/element",
 												 "element[@name='" + typeName + "']/simpleType/sequence/element",
 												 "element[@name='" + typeName + "']/complexType/sequence/element",
-												 "element[@name='" + typeName + "']");
+												 "element[@name='" + typeName + "']",
+												 "simpleType[@name='" + typeName + "']/restriction/enumeration");
 			//Flag for elements found
 			Boolean found = false;
 
@@ -278,56 +293,85 @@ public class SOAPModelDiscovery {
 			Schema model = new Schema();
 			Node item = elements.item(c);
 			
+			//Verify if its a enumeration element
+			String elmType = SOAPUtil.removeNSAlias(item.getNodeName());
+			
 			//Define root schema
 			if(previous != null)
 				previous.setNext(model);
 			else
 				root = model;
 			
+			//Define previous schema as the current.
 			previous = model;
-			NamedNodeMap attributes = elements.item(c).getAttributes();
 			
-			//Resolve attributes
-			String name = attributes.getNamedItem("name").getTextContent();
-			String type = attributes.getNamedItem("type") != null ? SOAPUtil.removeNSAlias(attributes.getNamedItem("type").getTextContent()) : null;
-			String maxOccurs = attributes.getNamedItem("maxOccurs") != null ? attributes.getNamedItem("maxOccurs").getTextContent() : "1";
-			
-			//Prepare namespace
-			String nsPrefix = item.getPrefix();
-			String nsUri = item.getNamespaceURI();
-			if(nsUri == null && nsPrefix == null/* && partNamespace != null*/){
-//				nsPrefix = partNamespace.getPrefix();
-//				nsUri = partNamespace.getURI();
-				nsUri = xsdNSURI;
-			}
-			
-			//Set model initial values
-			model.setName(name);
-			model.setNamespace(new Namespace(nsPrefix, nsUri));
-			
-			
-			if(XSDType.exists(type)){
-				//If exists type, then its not composed
-				model.setType(XSDType.getXSDType(type));
-			}
-			else{
-				//If not, then search for the specific type
-				Schema innerType = resolveXSDModel(partNamespace, scope, type);
-				if(innerType != null){
-					//Avoid root element duplicity
-					if(name.equals(typeName))
-						return innerType;
-				}
-				model.setType(XSDType.COMPLEX);
-				model.setInner(innerType);
+			//Strategy per element type
+			Schema highLvl = null;
+			switch (elmType.toLowerCase()) {
+				//ENUMERATION type
+				case "enumeration":
+					highLvl = handleEnumeration(item, model, xsdNSURI, partNamespace, scope, typeName);
+				break;
 				
-				//Check if its a List(if so, then wrap it inside another schema)
-				if(maxOccurs.equals("unbounded"))
-					return new Schema(typeName, new Namespace(nsPrefix, nsUri), XSDType.LIST, model, null);
+				//ELEMENT as default type
+				default:
+					highLvl = handleElement(item, model, xsdNSURI, partNamespace, scope, typeName);
+				break;
 			}
+			
+			//Check if it should return a high level element
+			if(highLvl != null)
+				return highLvl;
+		}
+		return root;
+	}
+
+	private Schema handleEnumeration(Node item, Schema model, String xsdNSURI,
+			Namespace partNamespace, Object scope, String typeName) {
+		return null;
+	}
+
+	private Schema handleElement(Node item, Schema model, String xsdNSURI,Namespace partNamespace, Object scope, String typeName) throws XPathExpressionException {
+		//Resolve attributes
+		NamedNodeMap attributes = item.getAttributes();
+		String name = attributes.getNamedItem("name").getTextContent();
+		String type = attributes.getNamedItem("type") != null ? SOAPUtil.removeNSAlias(attributes.getNamedItem("type").getTextContent()) : null;
+		String maxOccurs = attributes.getNamedItem("maxOccurs") != null ? attributes.getNamedItem("maxOccurs").getTextContent() : "1";
+		
+		//Prepare namespace
+		String nsPrefix = item.getPrefix();
+		String nsUri = item.getNamespaceURI();
+		if(nsUri == null && nsPrefix == null/* && partNamespace != null*/){
+//			nsPrefix = partNamespace.getPrefix();
+//			nsUri = partNamespace.getURI();
+			nsUri = xsdNSURI;
 		}
 		
-		return root;
+		//Set model initial values
+		model.setName(name);
+		model.setNamespace(new Namespace(nsPrefix, nsUri));
+		
+		
+		if(XSDType.exists(type)){
+			//If exists type, then its not composed
+			model.setType(XSDType.getXSDType(type));
+		}
+		else{
+			//If not, then search for the specific type
+			Schema innerType = resolveXSDModel(partNamespace, scope, type);
+			if(innerType != null){
+				//Avoid root element duplicity
+				if(name.equals(typeName))
+					return innerType;
+			}
+			model.setType(XSDType.COMPLEX);
+			model.setInner(innerType);
+			
+			//Check if its a List(if so, then wrap it inside another schema)
+			if(maxOccurs.equals("unbounded"))
+				return new Schema(typeName, new Namespace(nsPrefix, nsUri), XSDType.LIST, model, null);
+		}
+		return null;
 	}
 	
 //	private Schema newResolveXSDModel(Object scope, String typeName) throws XPathExpressionException{

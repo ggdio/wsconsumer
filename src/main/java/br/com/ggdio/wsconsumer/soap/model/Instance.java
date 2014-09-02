@@ -3,8 +3,6 @@ package br.com.ggdio.wsconsumer.soap.model;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.xml.soap.SOAPConstants;
-
 import br.com.ggdio.wsconsumer.common.model.TO;
 import br.com.ggdio.wsconsumer.soap.api.constant.WSDLConstants;
 
@@ -18,19 +16,17 @@ public class Instance extends TO{
 	private static final long serialVersionUID = 1L;
 	
 	public static final String WSDL = "WSDL";
-	public static final String SOAP_PROTOCOL = "SOAP_PROTOCOL";
 	public static final String TARGET_NAMESPACE = "TARGET_NAMESPACE";
 	public static final String ELEMENT_FORM_DEFAULT = "ELEMENT_FORM_DEFAULT";
 	public static final String STYLE = "STYLE";
 	public static final String SERVICES = "SERVICES";
 
 	public Instance() {
-		this("", SOAPConstants.SOAP_1_1_PROTOCOL, "", WSDLConstants.ELEMENT_FORM_DEFAULT_QUALIFIED, WSDLConstants.STYLE_LITERAL, new ArrayList<Service>());
+		this("", "", WSDLConstants.ELEMENT_FORM_DEFAULT_QUALIFIED, WSDLConstants.STYLE_LITERAL, new ArrayList<Service>());
 	}
 
-	public Instance(String wsdl, String soapProtocol, String targetNamespace, String elementFormDefault, String style, List<Service> services) {
+	public Instance(String wsdl, String targetNamespace, String elementFormDefault, String style, List<Service> services) {
 		setWSDL(wsdl);
-		setSOAPProtocol(soapProtocol);
 		setTargetNamespace(targetNamespace);
 		setElementFormDefault(elementFormDefault);
 		setStyle(style);
@@ -43,14 +39,6 @@ public class Instance extends TO{
 	
 	public void setWSDL(String wsdl){
 		addData(WSDL, wsdl);
-	}
-	
-	public String getSOAPProtocol(){
-		return getString(SOAP_PROTOCOL);
-	}
-	
-	public void setSOAPProtocol(String soapProtocol){
-		addData(SOAP_PROTOCOL, soapProtocol);
 	}
 	
 	public String getTargetNamespace(){
