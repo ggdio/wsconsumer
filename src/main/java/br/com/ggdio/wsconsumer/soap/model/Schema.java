@@ -1,6 +1,7 @@
 package br.com.ggdio.wsconsumer.soap.model;
 
 import br.com.ggdio.wsconsumer.common.model.TO;
+import br.com.ggdio.wsconsumer.soap.api.constant.WSDLConstants;
 
 
 /**
@@ -17,17 +18,19 @@ public class Schema extends TO{
 	public static final String TYPE = "TYPE";
 	public static final String INNER = "INNER";
 	public static final String NEXT = "NEXT";
+	public static final String ELEMENT_FORM_DEFAULT = "ELEMENT_FORM_DEFAULT";
 	
 	public Schema() {
-		this("", new Namespace(), XSDType.STRING, null, null);
+		this("", new Namespace(), XSDType.STRING, null, null, WSDLConstants.ELEMENT_FORM_DEFAULT_QUALIFIED);
 	}
 	
-	public Schema(String name, Namespace namespace, XSDType type, Schema inner, Schema next) {
+	public Schema(String name, Namespace namespace, XSDType type, Schema inner, Schema next, String efd) {
 		setName(name);
 		setNamespace(namespace);
 		setType(type);
 		setInner(inner);
 		setNext(next);
+		setElementFormDefault(efd);
 	}
 	
 	public String getName(){
@@ -68,6 +71,18 @@ public class Schema extends TO{
 	
 	public void setNext(Schema inner){
 		addData(NEXT, inner);
+	}
+	
+	public String getElementFormDefault(){
+		return getString(ELEMENT_FORM_DEFAULT);
+	}
+	
+	public void setElementFormDefault(String efd){
+		addData(ELEMENT_FORM_DEFAULT, efd);
+	}
+	
+	public Boolean isQualified(){
+		return getElementFormDefault().equals(WSDLConstants.ELEMENT_FORM_DEFAULT_QUALIFIED);
 	}
 	
 }

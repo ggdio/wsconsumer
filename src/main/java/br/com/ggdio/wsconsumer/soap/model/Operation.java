@@ -23,12 +23,13 @@ public class Operation extends TO {
 	public static final String FAULT = "FAULT";
 	public static final String SOAP_PROTOCOL = "SOAP_PROTOCOL";
 	public static final String USE = "USE";
+	public static final String SOAP_ACTION = "SOAP_ACTION";
 	
 	public Operation() {
-		this("", new Namespace(), new Part(), new Part(), new Part(), new Part(), SOAPConstants.SOAP_1_1_PROTOCOL, WSDLConstants.STYLE_LITERAL);
+		this("", new Namespace(), new Part(), new Part(), new Part(), new Part(), SOAPConstants.SOAP_1_1_PROTOCOL, WSDLConstants.STYLE_LITERAL, "");
 	}
 	
-	public Operation(String name, Namespace namespace, Part header, Part input, Part output, Part fault, String soapProtocol, String use){
+	public Operation(String name, Namespace namespace, Part header, Part input, Part output, Part fault, String soapProtocol, String use, String soapAction){
 		setName(name);
 		setNamespace(namespace);
 		setHeader(header);
@@ -36,6 +37,7 @@ public class Operation extends TO {
 		setOutput(output);
 		setFault(fault);
 		setSOAPProtocol(soapProtocol);
+		setSOAPAction(soapAction);
 	}
 	
 	public String getName(){
@@ -94,12 +96,21 @@ public class Operation extends TO {
 		return getString(SOAP_PROTOCOL);
 	}
 	
+	
 	public String getUse(){
 		return getString(USE);
 	}
 	
 	public void setUse(String use){
 		addData(USE, use);
+	}
+	
+	public String getSOAPAction(){
+		return getString(SOAP_ACTION);
+	}
+	
+	public void setSOAPAction(String soapAction){
+		addData(SOAP_ACTION, soapAction);
 	}
 	
 }

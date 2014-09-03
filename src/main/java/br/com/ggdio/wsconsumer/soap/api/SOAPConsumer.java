@@ -28,7 +28,6 @@ import org.w3c.dom.NodeList;
 import br.com.ggdio.wsconsumer.soap.invoke.Invocation;
 import br.com.ggdio.wsconsumer.soap.invoke.SchemaValue;
 import br.com.ggdio.wsconsumer.soap.model.Instance;
-import br.com.ggdio.wsconsumer.soap.model.Namespace;
 import br.com.ggdio.wsconsumer.soap.model.Part;
 import br.com.ggdio.wsconsumer.soap.model.Schema;
 import br.com.ggdio.wsconsumer.soap.model.XSDType;
@@ -318,7 +317,11 @@ public class SOAPConsumer {
 	 * @param invocation
 	 */
 	private void compileMimeHeaders(MimeHeaders headers, Invocation invocation) {
-		headers.setHeader("SOAPAction", getWebservice().getTargetNamespace() + invocation.getOperation().getName());
+//		String tns = getWebservice().getTargetNamespace();
+//		if(!tns.endsWith("/"))
+//			tns += "/";
+//		String soapAction = tns + invocation.getOperation().getName();
+		headers.setHeader("SOAPAction", invocation.getOperation().getSOAPAction());
 		headers.setHeader("Content-Type", "text/xml; charset=utf-8");
         headers.setHeader("Connection", "Keep-Alive");
 	}
@@ -361,32 +364,6 @@ public class SOAPConsumer {
 		//Prepare operation structure
         compileSoapOperation(operation, invocation.getOperation().getInput().getRootSchema(), invocation.getInput());
 	}
-	
-	/**
-	 * Compile SOAPOperation envelope based on part structure and schema value
-	 * @param scope
-	 * @param structure
-	 * @param input
-	 * @throws SOAPException
-	 */
-//	private void compileSoapOperation(SOAPElement scope, Part structure, SchemaValue input) throws SOAPException{
-//		//Recover root schema
-//		Schema rootSchema = structure.getRootSchema();
-//		
-//		//Get native value
-//		Object nativeValue = input.getParameterValue(rootSchema.getName());
-//		
-//		//Prepare element
-//		SOAPElement element = addElement(scope, rootSchema);
-//		
-//		//Handle
-//		if(nativeValue instanceof SchemaValue) 
-//			//Nested
-//			compileSoapOperation(element, rootSchema.getInner(), (SchemaValue) nativeValue);
-//		else 
-//			//Plain
-//			setElementValue(element, rootSchema, nativeValue);
-//	}
 	
 	/**
 	 * Compile SOAPOperation envelope based on schema model and schema values
@@ -441,8 +418,10 @@ public class SOAPConsumer {
 	 * @throws SOAPException
 	 */
 	private SOAPElement addElement(SOAPElement parent, Schema schema) throws SOAPException{
-		Namespace namespace = schema.getNamespace();
-		return parent.addChildElement(schema.getName(), namespace.getPrefix(), namespace.getURI());
+		if(!schema.isQualified())
+			return parent.addChildElement(schema.getName());
+		else
+			return parent.addChildElement(schema.getName(), schema.getNamespace().getPrefix(), schema.getNamespace().getURI());
 	}
 	
 	/**

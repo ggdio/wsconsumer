@@ -11,6 +11,7 @@ import javax.wsdl.BindingOperation;
 import javax.wsdl.Definition;
 import javax.wsdl.WSDLException;
 import javax.wsdl.extensions.soap.SOAPBody;
+import javax.wsdl.extensions.soap.SOAPOperation;
 import javax.wsdl.extensions.soap12.SOAP12Body;
 import javax.wsdl.factory.WSDLFactory;
 import javax.wsdl.xml.WSDLReader;
@@ -84,8 +85,8 @@ public class SOAPModelDiscovery {
 
 		//Set the target namespace
 		String tns = def.getTargetNamespace();
-		if(!tns.endsWith("/"))
-			tns += "/";
+//		if(!tns.endsWith("/"))
+//			tns += "/";
 		webservice.setTargetNamespace(tns);
 		
 		//Scan services
@@ -118,9 +119,12 @@ public class SOAPModelDiscovery {
 				//Scan operations
 				List<BindingOperation> bindingOperations = portDef.getBinding().getBindingOperations();
 				for(BindingOperation bindingOperation : bindingOperations){
-					
-					//Scan operation
 					Operation operation = new Operation();
+					
+					//Get soapAction
+					operation.setSOAPAction(getSOAPAction(bindingOperation));
+				
+					//Scan operation
 					port.getOperations().add(operation);
 					javax.wsdl.Operation operationDef = (javax.wsdl.Operation) bindingOperation.getOperation();
 					
@@ -143,6 +147,17 @@ public class SOAPModelDiscovery {
 			}
 		}
 		return webservice;
+	}
+
+	@SuppressWarnings("unchecked")
+	private String getSOAPAction(BindingOperation bindingOperation) {
+		List<Object> extElms = bindingOperation.getExtensibilityElements();
+		if(extElms != null && extElms.size() > 0)
+			for(Object elm : extElms)
+				if(elm instanceof SOAPOperation)
+					return ((SOAPOperation) elm).getSoapActionURI();
+		
+		return "";
 	}
 	
 	/**
@@ -195,15 +210,8 @@ public class SOAPModelDiscovery {
 			Schema schema = null;
 			
 			String typeName = partDef.getTypeName() != null ? partDef.getTypeName().getLocalPart() : null;
-			if(typeName == null || "".equals(typeName)){
+			if(typeName == null || "".equals(typeName))
 				schema = resolveXSDModel(namespace, document, name);
-//				if(name.equals(operation.getName())){
-//					input = xsdModel;
-//					break;
-//				}
-				//Complex type(default is STRING)
-//				type = schema != null ? XSDType.COMPLEX : XSDType.STRING;
-			}
 			else{
 				XSDType type = null;
 				//Define schema type(default is STRING)
@@ -213,7 +221,7 @@ public class SOAPModelDiscovery {
 					type = XSDType.STRING;
 				
 				//Define schema
-				schema = new Schema(name, namespace, type, null, null);
+				schema = new Schema(name, namespace, type, null, null, WSDLConstants.ELEMENT_FORM_DEFAULT_QUALIFIED);
 				schema.setType(type);
 			}
 			
@@ -243,12 +251,12 @@ public class SOAPModelDiscovery {
 	 */
 	private Schema resolveXSDModel(Namespace partNamespace, Object scope, String typeName) throws XPathExpressionException{
 		//Prepare XPATH
-		XPathFactory factory = XPathFactory.newInstance();
-		XPath xpath = factory.newXPath();
+		XPath xpath = XPathFactory.newInstance().newXPath();
 		
 		//XSD Elements
 		NodeList elements = null;
 		String xsdNSURI = "";
+		String elementFormDefault = WSDLConstants.ELEMENT_FORM_DEFAULT_QUALIFIED;
 		
 		//Iterate over XSD
 		NodeList xsdSchemas = (NodeList) xpath.compile("//definitions/types/schema").evaluate(scope, XPathConstants.NODESET);
@@ -258,12 +266,8 @@ public class SOAPModelDiscovery {
 			NodeList innerScope = xsdSchema.getChildNodes();
 			
 			//Queries
-			List<String> queries = Arrays.asList("simpleType[@name='" + typeName + "']/sequence/element",
-												 "complexType[@name='" + typeName + "']/sequence/element",
-												 "element[@name='" + typeName + "']/simpleType/sequence/element",
-												 "element[@name='" + typeName + "']/complexType/sequence/element",
-												 "element[@name='" + typeName + "']",
-												 "simpleType[@name='" + typeName + "']/restriction/enumeration");
+			List<String> queries = getXPathQueries(typeName);
+			
 			//Flag for elements found
 			Boolean found = false;
 
@@ -279,23 +283,33 @@ public class SOAPModelDiscovery {
 			if(found){
 				//Prepare the targetNamespace
 				NamedNodeMap xsdAttrs = xsdSchema.getAttributes();
-				Node attr = xsdAttrs.getNamedItem(WSDLConstants.TARGET_NAMESPACE);
-				if(attr != null)
-					xsdNSURI = attr.getTextContent();
+				Node tnsAttr = xsdAttrs.getNamedItem(WSDLConstants.TARGET_NAMESPACE);
+				Node efdAttr = xsdAttrs.getNamedItem(WSDLConstants.ELEMENT_FORM_DEFAULT);
+				if(tnsAttr != null)
+					xsdNSURI = tnsAttr.getTextContent();
+				if(efdAttr != null)
+					elementFormDefault = efdAttr.getTextContent();
 				break;
 			}
 		}
 		
+		//Didnt find any child
+		if(elements == null || elements.getLength() == 0)
+			return null;
+		
 		//Strategy per node type
 		String et = SOAPUtil.removeNSAlias(elements.item(0).getNodeName());
-		switch (et.toLowerCase()) {
+		switch (et.toUpperCase()) {
 			//ENUMERATION type
-			case "enumeration":
-				return handleEnumeration(elements, xsdNSURI, partNamespace, scope, typeName);
-			
+			case WSDLConstants.ENUMERATION:
+				return handleEnumeration(elements, xsdNSURI, elementFormDefault, partNamespace, scope, typeName);
+				
 			//ELEMENT as default type
+			case WSDLConstants.ELEMENT:
+				return handleElement(elements, xsdNSURI, elementFormDefault, partNamespace, scope, typeName);
+			
 			default:
-				return handleElement(elements, xsdNSURI, partNamespace, scope, typeName);
+				return null;
 		}
 		
 	}
@@ -309,15 +323,15 @@ public class SOAPModelDiscovery {
 	 * @param typeName
 	 * @return
 	 */
-	private Schema handleEnumeration(NodeList elements, String xsdNSURI, Namespace partNamespace, Object scope, String typeName) {
-		Schema schema = new Schema(typeName, new Namespace("", ""), XSDType.ENUMERATION, null, null);
+	private Schema handleEnumeration(NodeList elements, String xsdNSURI, String efd, Namespace partNamespace, Object scope, String typeName) {
+		Schema schema = new Schema(typeName, new Namespace("", ""), XSDType.ENUMERATION, null, null, efd);
 		Schema previous = null;
 		//Iterate over the elements and fill the model
 		for(byte c=0;c<elements.getLength();c++){
 			Node item = elements.item(c);
 			NamedNodeMap attributes = item.getAttributes();
 			String value = attributes.getNamedItem("value").getTextContent();
-			Schema model = new Schema(value, new Namespace("", ""), XSDType.STRING, null, null);
+			Schema model = new Schema(value, new Namespace("", ""), XSDType.STRING, null, null, efd);
 			if(schema.getInner() == null)
 				schema.setInner(model);
 			else{
@@ -340,7 +354,7 @@ public class SOAPModelDiscovery {
 	 * @return
 	 * @throws XPathExpressionException
 	 */
-	private Schema handleElement(NodeList elements, String xsdNSURI,Namespace partNamespace, Object scope, String typeName) throws XPathExpressionException {
+	private Schema handleElement(NodeList elements, String xsdNSURI, String efd, Namespace partNamespace, Object scope, String typeName) throws XPathExpressionException {
 		//Iterate over the elements and fill the model
 		Schema root = null;
 		Schema previous = null;
@@ -375,8 +389,9 @@ public class SOAPModelDiscovery {
 			//Set model initial values
 			model.setName(name);
 			model.setNamespace(new Namespace(nsPrefix, nsUri));
+			model.setElementFormDefault(efd);
 			
-			
+			//Check if type exists
 			if(XSDType.exists(type)){
 				//If exists type, then its not composed
 				model.setType(XSDType.getXSDType(type));
@@ -394,10 +409,25 @@ public class SOAPModelDiscovery {
 				
 				//Check if its a List(if so, then wrap it inside another schema)
 				if(maxOccurs.equals("unbounded"))
-					return new Schema(typeName, new Namespace(nsPrefix, nsUri), XSDType.LIST, model, null);
+					return new Schema(typeName, new Namespace(nsPrefix, nsUri), XSDType.LIST, model, null, efd);
 			}
 		}
 		return root;
+	}
+	
+	/**
+	 * Return the possible xpath queries for elements structure
+	 * @param typeName
+	 * @return List of xpath queries
+	 */
+	private List<String> getXPathQueries(String typeName) {
+		return Arrays.asList("simpleType[@name='" + typeName + "']/sequence/element",
+							 "complexType[@name='" + typeName + "']/sequence/element",
+							 "element[@name='" + typeName + "']/simpleType/sequence/element",
+							 "element[@name='" + typeName + "']/complexType/sequence/element",
+							 "simpleType[@name='" + typeName + "']/restriction/enumeration",
+							 "complexType[@name='" + typeName + "']/complexContent/extension/sequence/element",
+							 "element[@name='" + typeName + "']");
 	}
 	
 }
