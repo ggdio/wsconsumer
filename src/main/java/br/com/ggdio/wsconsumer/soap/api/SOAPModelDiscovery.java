@@ -286,15 +286,67 @@ public class SOAPModelDiscovery {
 			}
 		}
 		
+		//Strategy per node type
+		String et = SOAPUtil.removeNSAlias(elements.item(0).getNodeName());
+		switch (et.toLowerCase()) {
+			//ENUMERATION type
+			case "enumeration":
+				return handleEnumeration(elements, xsdNSURI, partNamespace, scope, typeName);
+			
+			//ELEMENT as default type
+			default:
+				return handleElement(elements, xsdNSURI, partNamespace, scope, typeName);
+		}
+		
+	}
+
+	/**
+	 * Handle enumeration type
+	 * @param elements
+	 * @param xsdNSURI
+	 * @param partNamespace
+	 * @param scope
+	 * @param typeName
+	 * @return
+	 */
+	private Schema handleEnumeration(NodeList elements, String xsdNSURI, Namespace partNamespace, Object scope, String typeName) {
+		Schema schema = new Schema(typeName, new Namespace("", ""), XSDType.ENUMERATION, null, null);
+		Schema previous = null;
+		//Iterate over the elements and fill the model
+		for(byte c=0;c<elements.getLength();c++){
+			Node item = elements.item(c);
+			NamedNodeMap attributes = item.getAttributes();
+			String value = attributes.getNamedItem("value").getTextContent();
+			Schema model = new Schema(value, new Namespace("", ""), XSDType.STRING, null, null);
+			if(schema.getInner() == null)
+				schema.setInner(model);
+			else{
+				if(previous == null)
+					previous = model;
+				else
+					previous.setNext(model);
+			}
+		}
+		return schema;
+	}
+
+	/**
+	 * Handle element type
+	 * @param elements
+	 * @param xsdNSURI
+	 * @param partNamespace
+	 * @param scope
+	 * @param typeName
+	 * @return
+	 * @throws XPathExpressionException
+	 */
+	private Schema handleElement(NodeList elements, String xsdNSURI,Namespace partNamespace, Object scope, String typeName) throws XPathExpressionException {
 		//Iterate over the elements and fill the model
 		Schema root = null;
 		Schema previous = null;
 		for(byte c=0;c<elements.getLength();c++){
 			Schema model = new Schema();
 			Node item = elements.item(c);
-			
-			//Verify if its a enumeration element
-			String elmType = SOAPUtil.removeNSAlias(item.getNodeName());
 			
 			//Define root schema
 			if(previous != null)
@@ -305,221 +357,47 @@ public class SOAPModelDiscovery {
 			//Define previous schema as the current.
 			previous = model;
 			
-			//Strategy per element type
-			Schema highLvl = null;
-			switch (elmType.toLowerCase()) {
-				//ENUMERATION type
-				case "enumeration":
-					highLvl = handleEnumeration(item, model, xsdNSURI, partNamespace, scope, typeName);
-				break;
-				
-				//ELEMENT as default type
-				default:
-					highLvl = handleElement(item, model, xsdNSURI, partNamespace, scope, typeName);
-				break;
+			//Resolve attributes
+			NamedNodeMap attributes = item.getAttributes();
+			String name = attributes.getNamedItem("name").getTextContent();
+			String type = attributes.getNamedItem("type") != null ? SOAPUtil.removeNSAlias(attributes.getNamedItem("type").getTextContent()) : null;
+			String maxOccurs = attributes.getNamedItem("maxOccurs") != null ? attributes.getNamedItem("maxOccurs").getTextContent() : "1";
+			
+			//Prepare namespace
+			String nsPrefix = item.getPrefix();
+			String nsUri = item.getNamespaceURI();
+			if(nsUri == null && nsPrefix == null/* && partNamespace != null*/){
+//					nsPrefix = partNamespace.getPrefix();
+//					nsUri = partNamespace.getURI();
+				nsUri = xsdNSURI;
 			}
 			
-			//Check if it should return a high level element
-			if(highLvl != null)
-				return highLvl;
+			//Set model initial values
+			model.setName(name);
+			model.setNamespace(new Namespace(nsPrefix, nsUri));
+			
+			
+			if(XSDType.exists(type)){
+				//If exists type, then its not composed
+				model.setType(XSDType.getXSDType(type));
+			}
+			else{
+				//If not, then search for the specific type
+				Schema innerType = resolveXSDModel(partNamespace, scope, type);
+				if(innerType != null){
+					//Avoid root element duplicity
+					if(name.equals(typeName))
+						return innerType;
+				}
+				model.setType(XSDType.COMPLEX);
+				model.setInner(innerType);
+				
+				//Check if its a List(if so, then wrap it inside another schema)
+				if(maxOccurs.equals("unbounded"))
+					return new Schema(typeName, new Namespace(nsPrefix, nsUri), XSDType.LIST, model, null);
+			}
 		}
 		return root;
 	}
-
-	private Schema handleEnumeration(Node item, Schema model, String xsdNSURI,
-			Namespace partNamespace, Object scope, String typeName) {
-		return null;
-	}
-
-	private Schema handleElement(Node item, Schema model, String xsdNSURI,Namespace partNamespace, Object scope, String typeName) throws XPathExpressionException {
-		//Resolve attributes
-		NamedNodeMap attributes = item.getAttributes();
-		String name = attributes.getNamedItem("name").getTextContent();
-		String type = attributes.getNamedItem("type") != null ? SOAPUtil.removeNSAlias(attributes.getNamedItem("type").getTextContent()) : null;
-		String maxOccurs = attributes.getNamedItem("maxOccurs") != null ? attributes.getNamedItem("maxOccurs").getTextContent() : "1";
-		
-		//Prepare namespace
-		String nsPrefix = item.getPrefix();
-		String nsUri = item.getNamespaceURI();
-		if(nsUri == null && nsPrefix == null/* && partNamespace != null*/){
-//			nsPrefix = partNamespace.getPrefix();
-//			nsUri = partNamespace.getURI();
-			nsUri = xsdNSURI;
-		}
-		
-		//Set model initial values
-		model.setName(name);
-		model.setNamespace(new Namespace(nsPrefix, nsUri));
-		
-		
-		if(XSDType.exists(type)){
-			//If exists type, then its not composed
-			model.setType(XSDType.getXSDType(type));
-		}
-		else{
-			//If not, then search for the specific type
-			Schema innerType = resolveXSDModel(partNamespace, scope, type);
-			if(innerType != null){
-				//Avoid root element duplicity
-				if(name.equals(typeName))
-					return innerType;
-			}
-			model.setType(XSDType.COMPLEX);
-			model.setInner(innerType);
-			
-			//Check if its a List(if so, then wrap it inside another schema)
-			if(maxOccurs.equals("unbounded"))
-				return new Schema(typeName, new Namespace(nsPrefix, nsUri), XSDType.LIST, model, null);
-		}
-		return null;
-	}
-	
-//	private Schema newResolveXSDModel(Object scope, String typeName) throws XPathExpressionException{
-//		//Object to return
-//		Schema model = new Schema();
-//		
-//		//Prepare XPATH
-//		XPathFactory factory = XPathFactory.newInstance();
-//		XPath xpath = factory.newXPath();
-//		
-//		//Search for all node types inside schema node with name equals to 'typeName'
-//		String simpleTypeQuery = "//definitions/types/schema/*[@name='" + typeName + "']";
-//		NodeList elements = (NodeList) xpath.compile(simpleTypeQuery).evaluate(scope, XPathConstants.NODESET);
-//		
-//		//Iterate over the elements and fill the model
-//		for(byte c=0;c<elements.getLength();c++){
-//			//Recover node data
-//			Node node = elements.item(c);
-//			NamedNodeMap attributes = node.getAttributes();
-//			
-//			//Handle types specifically	
-//			String nodeName = removeNSAlias(node.getNodeName()).toUpperCase();
-//			switch (nodeName) {
-//				case WSDLConstants.ELEMENT:
-//					handleElement(scope, elements, xpath, node);
-//					break;
-//				case WSDLConstants.SIMPLETYPE:
-//					handleSimpleType(scope, elements, xpath, node);
-//					break;
-//				case WSDLConstants.COMPLEXTYPE:
-//					handleComplexType(scope, elements, xpath, node);		
-//					break;
-//				case WSDLConstants.SEQUENCE:
-//					handleSequence(scope, elements, xpath, node);
-//					break;
-//				case WSDLConstants.COMPLEXCONTENT:
-//					handleComplexContent(scope, elements, xpath, node);
-//					break;
-//				case WSDLConstants.EXTENSION:
-//					handleExtension(scope, elements, xpath, node);
-//					break;
-//				case WSDLConstants.RESTRICTION:
-//					handleRestriction(scope, elements, xpath, node);
-//					break;
-//				case WSDLConstants.ENUMERATION:
-//					handleEnumeration(scope, elements, xpath, node);
-//					break;
-//				default:
-//					handleDefault(scope, elements, xpath, node);
-//					break;
-//			}
-//			
-//			String name = attributes.getNamedItem("name").getTextContent();
-//			String type = attributes.getNamedItem("type") != null ? removeNSAlias(attributes.getNamedItem("type").getTextContent()) : name;
-//			String nsPrefix = node.getPrefix();
-//			String nsUri = node.getNamespaceURI();
-//			
-//			model.setName(name);
-//			model.setNamespace(new Namespace(nsPrefix, nsUri));
-//		}
-//		
-//		return model;
-//	}
-//	
-//	private Schema handleDefault(Object scope, NodeList nodeList, XPath xpath, Node node) throws XPathExpressionException {
-//		NamedNodeMap attributes = node.getAttributes();
-//		return null;
-//	}
-//
-//	private Schema handleEnumeration(Object scope, NodeList nodeList, XPath xpath, Node node) throws XPathExpressionException {
-//		NamedNodeMap attributes = node.getAttributes();
-//		return null;
-//	}
-//
-//	private Schema handleRestriction(Object scope, NodeList nodeList, XPath xpath, Node node) throws XPathExpressionException {
-//		NamedNodeMap attributes = node.getAttributes();
-//		return null;
-//	}
-//
-//	private Schema handleExtension(Object scope, NodeList nodeList, XPath xpath, Node node) throws XPathExpressionException {
-//		NamedNodeMap attributes = node.getAttributes();
-//		return null;
-//	}
-//
-//	private Schema handleComplexContent(Object scope, NodeList nodeList, XPath xpath, Node node) throws XPathExpressionException {
-//		NamedNodeMap attributes = node.getAttributes();
-//		return null;
-//	}
-//
-//	private Schema handleSequence(Object scope, NodeList nodeList, XPath xpath, Node node) throws XPathExpressionException {
-//		NamedNodeMap attributes = node.getAttributes();
-//		return null;
-//	}
-//
-//	private Schema handleComplexType(Object scope, NodeList nodeList, XPath xpath, Node node) throws XPathExpressionException {
-//		NamedNodeMap attributes = node.getAttributes();
-//		return null;
-//	}
-//
-//	private Schema handleSimpleType(Object scope, NodeList nodeList, XPath xpath, Node node) throws XPathExpressionException {
-//		NamedNodeMap attributes = node.getAttributes();
-//		return null;
-//	}
-//
-//	private Schema handleElement(Object scope, NodeList nodeList, XPath xpath, Node node) throws XPathExpressionException {
-//		NamedNodeMap attributes = node.getAttributes();
-//		Namespace namespace = new Namespace(node.getPrefix(), node.getNamespaceURI());
-//		String name = attributes.getNamedItem("name").getTextContent();
-//		Schema schema = new Schema(name, namespace, null, null);
-//		
-//		//Handle element
-//		if(attributes.getNamedItem("type") == null){
-//			//No type, so it has childrens
-//			Schema innerSchema = resolveXSDModel(node.getChildNodes(), name);
-//			
-//			//Check inner schema
-//			if(innerSchema == null){
-//				schema.setType(XSDType.STRING);
-//			}
-//			else{
-//				schema.setType(XSDType.COMPLEX);
-//				schema.setInner(innerSchema);
-//			}
-//		}
-//		else{
-//			String strType = attributes.getNamedItem("type").getTextContent();
-//			if(XSDType.exists(strType))
-//				schema.setType(XSDType.getXSDType(strType));
-//			//If not, the search for the specific type
-//			else{
-//				Schema innerType = newResolveXSDModel(scope, strType);
-////				if(innerType != null){
-//					//Avoid root element duplicity
-////					if(name.equals(typeName))
-////						return innerType;
-////				}
-//				schema.setType(XSDType.COMPLEX);
-//				schema.setInner(innerType);
-//			}
-//		}
-//		return schema;
-//	}
-
-//	private Schema getSchema(Definition definition){
-//	for(Object elm : definition.getTypes().getExtensibilityElements())
-//		if(elm instanceof Schema)
-//			return (Schema) elm;
-//	return null;
-//}
 	
 }

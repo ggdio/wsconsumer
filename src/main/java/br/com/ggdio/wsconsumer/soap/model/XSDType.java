@@ -17,6 +17,7 @@ import br.com.ggdio.wsconsumer.soap.converter.DateConverter;
 import br.com.ggdio.wsconsumer.soap.converter.DateTimeConverter;
 import br.com.ggdio.wsconsumer.soap.converter.DecimalConverter;
 import br.com.ggdio.wsconsumer.soap.converter.DoubleConverter;
+import br.com.ggdio.wsconsumer.soap.converter.EnumerationConverter;
 import br.com.ggdio.wsconsumer.soap.converter.FloatConverter;
 import br.com.ggdio.wsconsumer.soap.converter.IDConverter;
 import br.com.ggdio.wsconsumer.soap.converter.IDRefsConverter;
@@ -39,6 +40,7 @@ import br.com.ggdio.wsconsumer.soap.validator.DateTimeValidator;
 import br.com.ggdio.wsconsumer.soap.validator.DateValidator;
 import br.com.ggdio.wsconsumer.soap.validator.DecimalValidator;
 import br.com.ggdio.wsconsumer.soap.validator.DoubleValidator;
+import br.com.ggdio.wsconsumer.soap.validator.EnumerationValidator;
 import br.com.ggdio.wsconsumer.soap.validator.FloatValidator;
 import br.com.ggdio.wsconsumer.soap.validator.IDRefsValidator;
 import br.com.ggdio.wsconsumer.soap.validator.IDValidator;
@@ -98,6 +100,8 @@ public enum XSDType {
 	ID("ws.soap.type.id", String.class, new IDValidator(), new IDConverter()),
 	
 	IDREFS("ws.soap.type.idrefs", String.class, new IDRefsValidator(), new IDRefsConverter()),
+	
+	ENUMERATION("ws.soap.type.enumeration", String.class, new EnumerationValidator(), new EnumerationConverter()),
 	
 	LIST("ws.soap.type.list", List.class, new ListValidator(), new ListConverter()),
 	
