@@ -238,7 +238,6 @@ public class SOAPModelDiscovery {
 			//Save root
 			if(part.getRootSchema() == null)
 				part.setRootSchema(schema);
-			
 		}
 		return part;
 	}
@@ -267,14 +266,11 @@ public class SOAPModelDiscovery {
 			Node xsdSchema = xsdSchemas.item(c);
 			NodeList innerScope = xsdSchema.getChildNodes();
 			
-			//Queries
-			List<String> queries = getXPathQueries(typeName);
-			
 			//Flag for elements found
 			Boolean found = false;
 
 			//Search
-			for(String query : queries){
+			for(String query : getXPathQueries(typeName)){
 				elements = (NodeList) xpath.compile(query).evaluate(innerScope, XPathConstants.NODESET);
 				found = elements.getLength() > 0;
 				if(found)
@@ -357,6 +353,8 @@ public class SOAPModelDiscovery {
 	 * @throws XPathExpressionException
 	 */
 	private Schema handleElement(NodeList elements, String xsdNSURI, String efd, Namespace partNamespace, Object scope, String typeName) throws XPathExpressionException {
+		if(elements.getLength() == 0) return null;
+		
 		//Iterate over the elements and fill the model
 		Schema root = null;
 		Schema previous = null;
@@ -414,6 +412,19 @@ public class SOAPModelDiscovery {
 					return new Schema(typeName, new Namespace(nsPrefix, nsUri), XSDType.LIST, null, model, null, null, efd);
 			}
 		}
+		
+		//Handle extensions
+		Node checkExtension = elements.item(0).getParentNode().getParentNode();
+		if(checkExtension != null && SOAPUtil.removeNSAlias(checkExtension.getNodeName()).equalsIgnoreCase(WSDLConstants.EXTENSION)){
+			//Get base name and search it
+			String base = SOAPUtil.removeNSAlias(checkExtension.getAttributes().getNamedItem("base").getTextContent());
+			Schema extension = resolveXSDModel(partNamespace, scope, base);
+			
+			//Plug the extension after the last schema
+			previous.setNext(extension);
+		}
+		
+		//Return the root schema
 		return root;
 	}
 	

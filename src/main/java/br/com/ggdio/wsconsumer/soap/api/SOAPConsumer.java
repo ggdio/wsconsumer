@@ -144,7 +144,12 @@ public class SOAPConsumer {
 				nested.putParameterValue(next.getName(), list);
 				parseResponse(xPath, scope, schema.getInner(), list);
 			}
-			else*/ if(next.getInner() != null){
+			else*/
+			if(next.getType() == XSDType.ENUMERATION){
+				//ENUMERATION
+				resolveValue(xPath, scope, nested, next.getUpper());
+			}
+			else if(next.getInner() != null){
 				//NESTED FIELDS
 				nested.putInnerParameterValue(next.getName(), parseResponse(xPath, scope, next.getInner()));
 				nested.setSchema(next);
@@ -177,7 +182,7 @@ public class SOAPConsumer {
 	 */
 	private void resolveValue(XPath xPath, NodeList scope, SchemaValue nested, Schema schema) throws XPathExpressionException {
 		//Search for the plain node by schema name
-		NodeList result = search(schema.getName(), xPath, scope);
+		NodeList result = search(schema, xPath, scope);
 		
 		//Handle blank or null
 		if(result.getLength() == 0){
@@ -213,8 +218,8 @@ public class SOAPConsumer {
 	 * @return
 	 * @throws XPathExpressionException
 	 */
-	private NodeList search(String typeName, XPath xPath, NodeList scope) throws XPathExpressionException {
-		return (NodeList) xPath.compile("//*[local-name()='" + typeName + "']").evaluate(scope, XPathConstants.NODESET);
+	private NodeList search(Schema schema, XPath xPath, NodeList scope) throws XPathExpressionException {
+		return (NodeList) xPath.compile("//*[local-name()='" + schema.getName() + "']").evaluate(scope, XPathConstants.NODESET);
 	}
 	
 	/**
