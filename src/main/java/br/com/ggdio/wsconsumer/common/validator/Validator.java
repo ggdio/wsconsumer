@@ -1,5 +1,7 @@
 package br.com.ggdio.wsconsumer.common.validator;
 
+import br.com.ggdio.wsconsumer.soap.model.Schema;
+
 
 /**
  * Data validation interface
@@ -14,5 +16,5 @@ public interface Validator {
 	 * @param value
 	 * @throws ValidatorException - If its not valid, or the operation fails
 	 */
-	public void validate(String value) throws ValidatorException;
+	public void validate(Schema schema, String value) throws ValidatorException;
 }

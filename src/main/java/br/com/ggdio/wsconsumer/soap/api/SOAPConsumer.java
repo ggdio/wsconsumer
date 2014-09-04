@@ -198,7 +198,7 @@ public class SOAPConsumer {
 	private void setSchemaValue(SchemaValue nested, Schema schema, Node item) {
 		//Recover the plain value and convert it to a native one
 		String plainValue = item.getTextContent();
-		Object nativeValue = schema.getType().getConverter().toObject(plainValue);
+		Object nativeValue = schema.getType().convertToObject(schema, plainValue);
 		
 		//Put the parameter native value
 		nested.putParameterValue(schema.getName(), nativeValue);
@@ -216,68 +216,6 @@ public class SOAPConsumer {
 	private NodeList search(String typeName, XPath xPath, NodeList scope) throws XPathExpressionException {
 		return (NodeList) xPath.compile("//*[local-name()='" + typeName + "']").evaluate(scope, XPathConstants.NODESET);
 	}
-	
-//	private SchemaValue parseResponse(NodeList nodes, Part structure){
-//		SchemaValue value = new SchemaValue();
-//		for(byte c=0;c<nodes.getLength();c++){
-//			Node item = nodes.item(c);
-//			String nodeName = SOAPUtil.removeNSAlias(item.getNodeName());
-//			if(!nodeName.equals(structure.getName())){
-//				Schema schema = structure.getParameterSchema(nodeName);
-//				Node aux = item;
-//				while(schema == null){
-//					if(!item.hasChildNodes()) break;
-//					aux = aux.getChildNodes().item(0);
-//					nodeName = SOAPUtil.removeNSAlias(item.getNodeName());
-//					schema = structure.getParameterSchema(nodeName);
-//					if(schema != null)
-//						item = aux.getParentNode();
-//				}
-//				if(item.hasChildNodes() && !(item.getFirstChild() instanceof Text)){
-//					//INNER SCHEMA
-//					value.putInnerParameterValue(nodeName, parseResponse(item.getChildNodes(), schema));
-//				}
-//				else{
-//					//PLAIN SCHEMA
-//					String textValue = item.getTextContent();
-//					Converter<?> converter = schema.getType().getConverter();
-//					Object nativeValue = converter.toObject(textValue);
-//					value.putParameterValue(nodeName, nativeValue);
-//				}
-//			}
-//			else{
-//				//ROOT
-//				value = parseResponse(item.getChildNodes(), structure);
-//			}
-//				
-//		}
-//		return value;
-//	}
-//	
-//	private SchemaValue parseResponse(NodeList nodes, Schema schema){
-//		SchemaValue value = new SchemaValue();
-//		for(byte c=0;c<nodes.getLength();c++){
-//			Node item = nodes.item(c);
-//			String nodeName = SOAPUtil.removeNSAlias(item.getNodeName());
-//			Schema next = schema;
-//			do{
-//				if(nodeName.equals(next.getName())){
-//					if(next.getInner() != null){
-//						//INNER SCHEMA
-//						value.putInnerParameterValue(nodeName, parseResponse(item.getChildNodes(), next));
-//					}
-//					else{
-//						//PLAIN SCHEMA
-//						String textValue = item.getTextContent();
-//						Converter<?> converter = next.getType().getConverter();
-//						Object nativeValue = converter.toObject(textValue);
-//						value.putParameterValue(nodeName, nativeValue);
-//					}
-//				}
-//			} while((next = next.getNext()) != null);
-//		}
-//		return value;
-//	}
 	
 	/**
 	 * Compile the request based on invocation bean
@@ -317,10 +255,6 @@ public class SOAPConsumer {
 	 * @param invocation
 	 */
 	private void compileMimeHeaders(MimeHeaders headers, Invocation invocation) {
-//		String tns = getWebservice().getTargetNamespace();
-//		if(!tns.endsWith("/"))
-//			tns += "/";
-//		String soapAction = tns + invocation.getOperation().getName();
 		headers.setHeader("SOAPAction", invocation.getOperation().getSOAPAction());
 		headers.setHeader("Content-Type", "text/xml; charset=utf-8");
         headers.setHeader("Connection", "Keep-Alive");
@@ -343,7 +277,7 @@ public class SOAPConsumer {
 	 * @throws SOAPException
 	 */
 	private void compileSoapHeader(SOAPHeader header, Invocation invocation) throws SOAPException {
-		//TODO: Preare soapHeader
+		//TODO: Prepare soapHeader
 	}
 
 	/**
@@ -355,12 +289,10 @@ public class SOAPConsumer {
 	private void compileSoapBody(SOAPBody body, Invocation invocation) throws SOAPException {
 		//SOAP Operaton
 		SOAPElement operation = null;
-//		SOAPElement operation = body.addChildElement(new QName(getSoapBean().getTargetNamespace(), getSoapBean().getOperation()));
 		if(getWebservice().getTargetNamespace() != null && !"".equals(getWebservice().getTargetNamespace()))
 			operation = body.addChildElement(new QName(NAMESPACE_PREFIX + ":" + invocation.getOperation().getName()));
 		else
 			operation = body.addChildElement(new QName(invocation.getOperation().getName()));
-			
 		//Prepare operation structure
         compileSoapOperation(operation, invocation.getOperation().getInput().getRootSchema(), invocation.getInput());
 	}
@@ -435,50 +367,11 @@ public class SOAPConsumer {
 		XSDType type = schema.getType();
 		
 		//Convert it to a hard text value
-		String textValue = type.getConverter().toString(nativeValue);
+		String textValue = type.convertToString(schema, nativeValue);
 		
 		//Set element value
 		element.setValue(textValue);
 	}
-		
-	
-	/**
-	 * Compile the soap operation using the input and model structure
-	 * @param operation
-	 * @param input
-	 * @param model
-	 * @throws SOAPException
-	 */
-//	private void compileSoapOperation(SOAPElement operation, List<Schema> model, List<SchemaValue> input) throws SOAPException{
-//		//Iterate over the user input data
-//		Set<String> keys = input.getAllData().keySet();
-//		for(String key : keys){
-//			String name = key;
-//			
-//			//Retrieve the native language value
-//			Object nativeValue = input.getData(name);
-//			
-//			//Prepare node name
-////			QName qname = new QName(getSoapBean().getTargetNamespace(), name);
-//			QName qname = new QName(name);
-//			SOAPElement inputElement = operation.addChildElement(qname);
-//			
-//			//Check if its a complex value then handle it recursively
-//			if(nativeValue instanceof TO)
-//				compileSoapOperation(inputElement, (TO) nativeValue, (TO) model.getData(name));
-//			else{
-//				//Retrieve the field type
-//				XSDType type = (XSDType) model.getData(name);
-//				
-//				//Convert it to a hard text value
-//				String textValue = type.getConverter().toString(nativeValue);
-//				
-//				//Set element value
-//				inputElement.setValue(textValue);
-//			}
-//			
-//		}
-//	}
 	
 	/**
 	 * Get the WSDL Definition

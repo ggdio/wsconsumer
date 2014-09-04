@@ -72,7 +72,6 @@ public class SOAPModelDiscovery {
 		webservice.setServices(services);
 		
 		//Should define here the element form default(qualified|unqualified)
-//		webservice.setElementFormDefault(elementFormDefault);
 		
 		//Prepare the reader
 		WSDLReader reader = WSDLFactory.newInstance().newWSDLReader();
@@ -85,8 +84,6 @@ public class SOAPModelDiscovery {
 
 		//Set the target namespace
 		String tns = def.getTargetNamespace();
-//		if(!tns.endsWith("/"))
-//			tns += "/";
 		webservice.setTargetNamespace(tns);
 		
 		//Scan services
@@ -149,6 +146,11 @@ public class SOAPModelDiscovery {
 		return webservice;
 	}
 
+	/**
+	 * Read the soap action from binding operation
+	 * @param bindingOperation
+	 * @return
+	 */
 	@SuppressWarnings("unchecked")
 	private String getSOAPAction(BindingOperation bindingOperation) {
 		List<Object> extElms = bindingOperation.getExtensibilityElements();
@@ -156,7 +158,6 @@ public class SOAPModelDiscovery {
 			for(Object elm : extElms)
 				if(elm instanceof SOAPOperation)
 					return ((SOAPOperation) elm).getSoapActionURI();
-		
 		return "";
 	}
 	
@@ -209,6 +210,7 @@ public class SOAPModelDiscovery {
 			//Check type
 			Schema schema = null;
 			
+			//Identify type and scan the schema model
 			String typeName = partDef.getTypeName() != null ? partDef.getTypeName().getLocalPart() : null;
 			if(typeName == null || "".equals(typeName))
 				schema = resolveXSDModel(namespace, document, name);
@@ -221,7 +223,7 @@ public class SOAPModelDiscovery {
 					type = XSDType.STRING;
 				
 				//Define schema
-				schema = new Schema(name, namespace, type, null, null, WSDLConstants.ELEMENT_FORM_DEFAULT_QUALIFIED);
+				schema = new Schema(name, namespace, type, null, null, null, null, WSDLConstants.ELEMENT_FORM_DEFAULT_QUALIFIED);
 				schema.setType(type);
 			}
 			
@@ -324,14 +326,14 @@ public class SOAPModelDiscovery {
 	 * @return
 	 */
 	private Schema handleEnumeration(NodeList elements, String xsdNSURI, String efd, Namespace partNamespace, Object scope, String typeName) {
-		Schema schema = new Schema(typeName, new Namespace("", ""), XSDType.ENUMERATION, null, null, efd);
+		Schema schema = new Schema(typeName, new Namespace("", ""), XSDType.ENUMERATION, null, null, null, null, efd);
 		Schema previous = null;
 		//Iterate over the elements and fill the model
 		for(byte c=0;c<elements.getLength();c++){
 			Node item = elements.item(c);
 			NamedNodeMap attributes = item.getAttributes();
 			String value = attributes.getNamedItem("value").getTextContent();
-			Schema model = new Schema(value, new Namespace("", ""), XSDType.STRING, null, null, efd);
+			Schema model = new Schema(value.toUpperCase(), new Namespace("", ""), XSDType.STRING, null,null, null, null, efd);
 			if(schema.getInner() == null)
 				schema.setInner(model);
 			else{
@@ -363,8 +365,10 @@ public class SOAPModelDiscovery {
 			Node item = elements.item(c);
 			
 			//Define root schema
-			if(previous != null)
+			if(previous != null){
 				previous.setNext(model);
+				model.setPrevious(previous);
+			}
 			else
 				root = model;
 			
@@ -380,11 +384,8 @@ public class SOAPModelDiscovery {
 			//Prepare namespace
 			String nsPrefix = item.getPrefix();
 			String nsUri = item.getNamespaceURI();
-			if(nsUri == null && nsPrefix == null/* && partNamespace != null*/){
-//					nsPrefix = partNamespace.getPrefix();
-//					nsUri = partNamespace.getURI();
+			if(nsUri == null && nsPrefix == null)
 				nsUri = xsdNSURI;
-			}
 			
 			//Set model initial values
 			model.setName(name);
@@ -406,10 +407,11 @@ public class SOAPModelDiscovery {
 				}
 				model.setType(XSDType.COMPLEX);
 				model.setInner(innerType);
+				innerType.setUpper(model);
 				
 				//Check if its a List(if so, then wrap it inside another schema)
 				if(maxOccurs.equals("unbounded"))
-					return new Schema(typeName, new Namespace(nsPrefix, nsUri), XSDType.LIST, model, null, efd);
+					return new Schema(typeName, new Namespace(nsPrefix, nsUri), XSDType.LIST, null, model, null, null, efd);
 			}
 		}
 		return root;

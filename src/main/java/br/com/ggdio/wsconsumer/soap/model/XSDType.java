@@ -148,4 +148,25 @@ public enum XSDType {
 	public Converter<?> getConverter() {
 		return converter;
 	}
+	
+	/**
+	 * Validates and converts a string value to plain java object
+	 * @param schema
+	 * @param value
+	 * @return
+	 */
+	public Object convertToObject(Schema schema, String value){
+		getValidator().validate(schema, value);
+		return getConverter().toObject(value);
+	}
+	
+	/**
+	 * Converts a plain java object to string
+	 * @param schema
+	 * @param value
+	 * @return
+	 */
+	public String convertToString(Schema schema, Object value){
+		return getConverter().toString(value);
+	}
 }

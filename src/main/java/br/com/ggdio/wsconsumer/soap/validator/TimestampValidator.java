@@ -5,6 +5,7 @@ import java.time.format.DateTimeFormatter;
 
 import br.com.ggdio.wsconsumer.common.validator.Validator;
 import br.com.ggdio.wsconsumer.common.validator.ValidatorException;
+import br.com.ggdio.wsconsumer.soap.model.Schema;
 
 /**
  * Timestamp element Validator
@@ -14,7 +15,7 @@ import br.com.ggdio.wsconsumer.common.validator.ValidatorException;
 public class TimestampValidator implements Validator{
 
 	@Override
-	public void validate(String value) throws ValidatorException {
+	public void validate(Schema schema, String value) throws ValidatorException {
 		try{
 			LocalDateTime.parse(value, DateTimeFormatter.ISO_DATE_TIME);
 		}

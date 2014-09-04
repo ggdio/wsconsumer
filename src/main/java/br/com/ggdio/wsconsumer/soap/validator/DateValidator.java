@@ -5,6 +5,7 @@ import java.time.format.DateTimeFormatter;
 
 import br.com.ggdio.wsconsumer.common.validator.Validator;
 import br.com.ggdio.wsconsumer.common.validator.ValidatorException;
+import br.com.ggdio.wsconsumer.soap.model.Schema;
 
 /**
  * Date element Validator
@@ -14,7 +15,7 @@ import br.com.ggdio.wsconsumer.common.validator.ValidatorException;
 public class DateValidator implements Validator{
 
 	@Override
-	public void validate(String value) throws ValidatorException {
+	public void validate(Schema schema, String value) throws ValidatorException {
 		try{
 			LocalDate.parse(value, DateTimeFormatter.ISO_DATE);
 		}

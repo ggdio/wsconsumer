@@ -16,19 +16,23 @@ public class Schema extends TO{
 	public static final String NAME = "NAME";
 	public static final String NAMESPACE = "NAMESPACE";
 	public static final String TYPE = "TYPE";
+	public static final String UPPER = "UPPER";
 	public static final String INNER = "INNER";
+	public static final String PREVIOUS = "PREVIOUS";
 	public static final String NEXT = "NEXT";
 	public static final String ELEMENT_FORM_DEFAULT = "ELEMENT_FORM_DEFAULT";
 	
 	public Schema() {
-		this("", new Namespace(), XSDType.STRING, null, null, WSDLConstants.ELEMENT_FORM_DEFAULT_QUALIFIED);
+		this("", new Namespace(), XSDType.STRING, null, null, null, null, WSDLConstants.ELEMENT_FORM_DEFAULT_QUALIFIED);
 	}
 	
-	public Schema(String name, Namespace namespace, XSDType type, Schema inner, Schema next, String efd) {
+	public Schema(String name, Namespace namespace, XSDType type, Schema upper, Schema inner, Schema previous, Schema next, String efd) {
 		setName(name);
 		setNamespace(namespace);
 		setType(type);
+		setUpper(upper);
 		setInner(inner);
+		setPrevious(previous);
 		setNext(next);
 		setElementFormDefault(efd);
 	}
@@ -57,12 +61,28 @@ public class Schema extends TO{
 		addData(TYPE, type);
 	}
 	
+	public Schema getUpper(){
+		return (Schema) getData(UPPER);
+	}
+	
+	public void setUpper(Schema upper){
+		addData(UPPER, upper);
+	}
+	
 	public Schema getInner(){
 		return (Schema) getData(INNER);
 	}
 	
 	public void setInner(Schema inner){
 		addData(INNER, inner);
+	}
+	
+	public Schema getPrevious(){
+		return (Schema) getData(PREVIOUS);
+	}
+	
+	public void setPrevious(Schema previous){
+		addData(PREVIOUS, previous);
 	}
 	
 	public Schema getNext(){
